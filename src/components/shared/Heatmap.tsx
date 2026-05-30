@@ -58,7 +58,8 @@ export function Heatmap({ logs, weeksToShow = 26 }: HeatmapProps) {
 
       <CardContent>
         {/* 3. SCROLL CONTAINER: Keeps it from breaking on small phones */}
-        <div className="w-full overflow-x-auto pb-4">
+        <div className="w-full touch-pan-x overflow-x-auto overflow-y-hidden overscroll-contain pb-4 [-webkit-overflow-scrolling:touch]">
+          {" "}
           {/* Changed gap-3 to gap-4 for a bit more breathing room */}
           <div className="flex min-w-max gap-4">
             <div className="flex flex-col justify-between py-1 text-[10px] font-medium text-muted-foreground md:text-xs">

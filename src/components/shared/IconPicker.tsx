@@ -2,7 +2,7 @@ import { useState, useMemo } from "react"
 import * as Icons from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
+
 import {
   Popover,
   PopoverContent,
@@ -82,11 +82,11 @@ export function IconPicker({
           />
 
           {/* Grid Canvas */}
-          <ScrollArea className="h-50 w-full rounded-lg border border-border/40 bg-muted/10 p-1.5 shadow-inner">
+          <div className="h-50 w-full touch-pan-y overflow-y-auto overscroll-contain rounded-lg border border-border/40 bg-muted/10 p-1.5 shadow-inner [-webkit-overflow-scrolling:touch]">
+            {" "}
             <div className="grid grid-cols-6 gap-1">
               {filteredIcons.map((name) => {
                 const IconComponent = (Icons as any)[name]
-                console.log(IconComponent, name)
                 const isSelected = selectedIconName === name
 
                 if (!IconComponent) return null
@@ -112,7 +112,6 @@ export function IconPicker({
                 )
               })}
             </div>
-
             {filteredIcons.length === 0 && (
               <div className="flex h-40 flex-col items-center justify-center text-center">
                 <p className="text-xs font-semibold text-muted-foreground">
@@ -120,7 +119,7 @@ export function IconPicker({
                 </p>
               </div>
             )}
-          </ScrollArea>
+          </div>
         </div>
       </PopoverContent>
     </Popover>
