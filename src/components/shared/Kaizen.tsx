@@ -17,6 +17,8 @@ import {
 import { useTracker } from "@/hooks/useTracker"
 import { addDays, format } from "date-fns"
 import { Heatmap } from "./Heatmap"
+import { AddHabitModal } from "./AddHabit"
+import { HabitActions } from "./HabitActions"
 
 const IconMap: Record<string, React.ReactNode> = {
   Code: <Code className="h-5 w-5" />,
@@ -39,21 +41,27 @@ export default function KaizenTracker() {
     weekCompletionPct,
     dsaStreak,
     currentWeekDays,
+    addHabit,
+    updateHabit,
+    deleteHabit,
+    sundayReview,
+    setSundayReview,
+    saveWeeklyReview,
+    isSavingReview,
   } = useTracker()
 
   return (
     <div className="flex min-h-screen justify-center bg-background p-6 font-sans text-foreground md:p-12">
       <div className="w-full max-w-4xl space-y-8">
         {/* Header Section */}
-        <header className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          {/* Left Column: Branding */}
           <div className="flex items-center gap-4">
-            <div>
-              <img
-                src="/light_icon.png"
-                alt="Kaizen Logo"
-                className="h-12 w-auto sm:h-16"
-              />
-            </div>
+            <img
+              src="/light_icon.png"
+              alt="Kaizen Logo"
+              className="h-12 w-auto sm:h-16"
+            />
             <div>
               <h1 className="text-2xl font-bold text-foreground">Kaizen</h1>
               <p className="text-sm text-muted-foreground">
@@ -62,17 +70,36 @@ export default function KaizenTracker() {
             </div>
           </div>
 
-          <div className="flex w-full items-center justify-between sm:w-auto sm:justify-end sm:space-x-4">
-            <Button variant="outline" size="icon" onClick={prevWeek}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-semibold text-foreground sm:text-base">
-              {format(currentWeekStart, "d MMM")} –{" "}
-              {format(addDays(currentWeekStart, 6), "d MMM")}
-            </span>
-            <Button variant="outline" size="icon" onClick={nextWeek}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          {/* Right Column: Dynamic Action Control Deck */}
+          <div className="xs:flex-row xs:items-center flex w-full flex-col gap-3 sm:w-auto sm:gap-4">
+            {/* Date Pagination Controls */}
+            <div className="flex flex-1 items-center justify-between rounded-xl border bg-card/50 p-1 sm:flex-initial sm:gap-3 sm:border-0 sm:bg-transparent sm:p-0">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={prevWeek}
+                className="h-9 w-9 shrink-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="px-3 text-xs font-semibold tracking-tight whitespace-nowrap text-foreground sm:text-sm md:text-base">
+                {format(currentWeekStart, "d MMM")} –{" "}
+                {format(addDays(currentWeekStart, 6), "d MMM")}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={nextWeek}
+                className="h-9 w-9 shrink-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Create Habit Button Trigger */}
+            <div className="xs:[&>*]:w-auto flex [&>*]:w-full">
+              <AddHabitModal onAddHabit={addHabit} />
+            </div>
           </div>
         </header>
 
@@ -114,66 +141,76 @@ export default function KaizenTracker() {
               </p>
             </div>
           ) : (
-            habits.map((habit) => {
-              const completedCount = currentWeekDays.reduce((count, date) => {
-                const dateStr = format(date, "yyyy-MM-dd")
-                const isCompleted = logs[`${habit.id}-${dateStr}`]
-                return count + (isCompleted ? 1 : 0)
-              }, 0)
-              return (
-                <Card key={habit.id} className="bg-card">
-                  <CardContent className="flex flex-col justify-between gap-6 p-4 md:flex-row md:items-center">
-                    {/* Habit Info */}
-                    <div className="flex min-w-50 items-center gap-4">
-                      <div className="rounded-lg bg-secondary p-2 text-secondary-foreground">
-                        {IconMap[habit.icon_name] || IconMap.default}
+            habits
+              .filter((habit) => !habit.is_archived)
+              .map((habit) => {
+                const completedCount = currentWeekDays.reduce((count, date) => {
+                  const dateStr = format(date, "yyyy-MM-dd")
+                  const isCompleted = logs[`${habit.id}-${dateStr}`]
+                  return count + (isCompleted ? 1 : 0)
+                }, 0)
+                return (
+                  <Card key={habit.id} className="bg-card">
+                    <CardContent className="flex flex-col justify-between gap-6 p-4 md:flex-row md:items-center">
+                      {/* Habit Info */}
+                      <div className="flex min-w-50 items-center gap-4">
+                        <div className="rounded-lg bg-secondary p-2 text-secondary-foreground">
+                          {IconMap[habit.icon_name] || IconMap.default}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-foreground">
+                            {habit.title}
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            {habit.description}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-foreground">
-                          {habit.title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                          {habit.description}
-                        </p>
+
+                      {/* Checkboxes */}
+                      <div className="flex w-full max-w-lg flex-1 justify-between md:w-auto md:gap-4">
+                        {currentWeekDays.map((date) => {
+                          const dateStr = format(date, "yyyy-MM-dd")
+                          const dayName = format(date, "EEE")
+
+                          return (
+                            <div
+                              key={dateStr}
+                              className="flex flex-col items-center gap-2"
+                            >
+                              <Checkbox
+                                className="h-8 w-8 rounded-lg"
+                                checked={
+                                  logs[`${habit.id}-${dateStr}`] || false
+                                }
+                                onCheckedChange={() =>
+                                  toggleHabit(habit.id, date)
+                                }
+                              />
+                              <span className="text-[10px] font-medium text-muted-foreground">
+                                {dayName}
+                              </span>
+                            </div>
+                          )
+                        })}
                       </div>
-                    </div>
 
-                    {/* Checkboxes */}
-                    <div className="flex w-full max-w-lg flex-1 justify-between md:w-auto md:gap-4">
-                      {currentWeekDays.map((date) => {
-                        const dateStr = format(date, "yyyy-MM-dd")
-                        const dayName = format(date, "EEE")
+                      {/* Target Badge & Actions */}
+                      <div className="ml-auto flex items-center gap-4 md:ml-0">
+                        <span className="rounded-full bg-secondary px-2 py-1 text-xs font-bold whitespace-nowrap text-secondary-foreground">
+                          {completedCount}/{habit.target_days}
+                        </span>
 
-                        return (
-                          <div
-                            key={dateStr}
-                            className="flex flex-col items-center gap-2"
-                          >
-                            <Checkbox
-                              className="h-8 w-8 rounded-lg"
-                              checked={logs[`${habit.id}-${dateStr}`] || false}
-                              onCheckedChange={() =>
-                                toggleHabit(habit.id, date)
-                              }
-                            />
-                            <span className="text-[10px] font-medium text-muted-foreground">
-                              {dayName}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    {/* Target Badge */}
-                    <div className="hidden items-center md:flex">
-                      <span className="rounded-full bg-secondary px-2 py-1 text-xs font-bold text-secondary-foreground">
-                        {completedCount}/{habit.target_days}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })
+                        <HabitActions
+                          habit={habit}
+                          onUpdate={updateHabit}
+                          onDelete={deleteHabit}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })
           )}
         </div>
 
@@ -182,6 +219,11 @@ export default function KaizenTracker() {
           <h2 className="mb-4 text-xs font-bold tracking-wider text-muted-foreground uppercase">
             Sunday Review
           </h2>
+          {isSavingReview && (
+            <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Saving review...
+            </div>
+          )}
           <div className="space-y-4">
             <Card className="bg-card">
               <CardHeader className="pb-2">
@@ -194,6 +236,19 @@ export default function KaizenTracker() {
                 <Textarea
                   placeholder="e.g. Solved sliding window without hints..."
                   className="min-h-25 resize-none"
+                  value={sundayReview.one_percent_win}
+                  onChange={(e) =>
+                    setSundayReview((prev) => ({
+                      ...prev,
+                      one_percent_win: e.target.value,
+                    }))
+                  }
+                  onBlur={() =>
+                    saveWeeklyReview(
+                      sundayReview.one_percent_win,
+                      sundayReview.adjustments
+                    )
+                  }
                 />
               </CardContent>
             </Card>
@@ -209,6 +264,19 @@ export default function KaizenTracker() {
                 <Textarea
                   placeholder="e.g. Move DSA to morning, evening is too tired..."
                   className="min-h-25 resize-none"
+                  value={sundayReview.adjustments}
+                  onChange={(e) =>
+                    setSundayReview((prev) => ({
+                      ...prev,
+                      adjustments: e.target.value,
+                    }))
+                  }
+                  onBlur={() =>
+                    saveWeeklyReview(
+                      sundayReview.one_percent_win,
+                      sundayReview.adjustments
+                    )
+                  }
                 />
               </CardContent>
             </Card>

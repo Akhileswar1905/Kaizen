@@ -10,6 +10,7 @@ export type Habit = {
   description: string
   target_days: number
   icon_name: string
+  is_archived: boolean
 }
 
 export function useTracker() {
@@ -20,6 +21,12 @@ export function useTracker() {
     () => startOfWeek(new Date(), { weekStartsOn: 1 }) // 1 = Monday
   )
   const [isLoading, setIsLoading] = useState(true)
+
+  const [sundayReview, setSundayReview] = useState({
+    one_percent_win: "",
+    adjustments: "",
+  })
+  const [isSavingReview, setIsSavingReview] = useState(false)
 
   // Fetch initial data
   const fetchData = useCallback(async () => {
@@ -44,10 +51,93 @@ export function useTracker() {
     setIsLoading(false)
   }, [])
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  const addHabit = async (newHabit: any) => {
+    const { data, error } = await supabase
+      .from("habits")
+      .insert([newHabit])
+      .select()
+      .single()
 
+    if (error) {
+      console.error("Error adding habit:", error)
+      return
+    }
+
+    // Immediately add it to the UI without refreshing the page
+    setHabits([...habits, data])
+  }
+
+  const updateHabit = async (habitId: string, updates: any) => {
+    const { data, error } = await supabase
+      .from("habits")
+      .update(updates)
+      .eq("id", habitId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Error updating habit:", error)
+      return
+    }
+
+    // Update state immediately
+    setHabits(habits.map((h) => (h.id === habitId ? data : h)))
+  }
+
+  const deleteHabit = async (habitId: string) => {
+    const { error } = await supabase.from("habits").delete().eq("id", habitId)
+
+    if (error) {
+      console.error("Error deleting habit:", error)
+      return
+    }
+
+    // Remove from state immediately
+    setHabits(habits.filter((h) => h.id !== habitId))
+  }
+
+  const saveWeeklyReview = async (winText: string, adjustText: string) => {
+    setIsSavingReview(true)
+    const formattedDate = format(currentWeekStart, "yyyy-MM-dd")
+
+    const { error } = await supabase.from("weekly_reviews").upsert(
+      {
+        week_start_date: formattedDate,
+        one_percent_win: winText,
+        adjustments: adjustText,
+      },
+      { onConflict: "week_start_date" } // This prevents duplicates!
+    )
+
+    if (error) {
+      console.error("Error saving review:", error)
+    }
+    setIsSavingReview(false)
+  }
+
+  useEffect(() => {
+    const fetchWeekData = async () => {
+      fetchData()
+      const formattedDate = format(currentWeekStart, "yyyy-MM-dd")
+      const { data: reviewData } = await supabase
+        .from("weekly_reviews")
+        .select("*")
+        .eq("week_start_date", formattedDate)
+        .single()
+
+      if (reviewData) {
+        setSundayReview({
+          one_percent_win: reviewData.one_percent_win || "",
+          adjustments: reviewData.adjustments || "",
+        })
+      } else {
+        // Clear it if no review exists for this week yet
+        setSundayReview({ one_percent_win: "", adjustments: "" })
+      }
+    }
+
+    fetchWeekData()
+  }, [currentWeekStart])
   // Handle checking/unchecking a habit
   const toggleHabit = async (habitId: string, date: Date) => {
     const dateString = format(date, "yyyy-MM-dd")
@@ -142,5 +232,12 @@ export function useTracker() {
     weekCompletionPct,
     dsaStreak,
     currentWeekDays,
+    addHabit,
+    updateHabit,
+    deleteHabit,
+    sundayReview,
+    setSundayReview,
+    saveWeeklyReview,
+    isSavingReview,
   }
 }
