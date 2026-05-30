@@ -24,14 +24,6 @@ import { DsaSheet } from "./DsaSheet"
 import { JournalView } from "./JournalView"
 import * as Icons from "lucide-react"
 
-const IconList: Record<string, React.ReactNode> = {
-  Code: <Code className="h-5 w-5" />,
-  Server: <Server className="h-5 w-5" />,
-  Briefcase: <Briefcase className="h-5 w-5" />,
-  PiggyBank: <PiggyBank className="h-5 w-5" />,
-  default: <Activity className="h-5 w-5" />,
-}
-
 export default function KaizenTracker() {
   const {
     IconMap,
