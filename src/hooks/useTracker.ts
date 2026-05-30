@@ -1,8 +1,9 @@
 import { addDays, subDays } from "date-fns"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { startOfWeek, subWeeks, addWeeks, format } from "date-fns"
 import { supabase } from "@/lib/supabase"
+import * as Icons from "lucide-react"
 
 export type Habit = {
   id: string
@@ -14,7 +15,17 @@ export type Habit = {
 }
 
 export function useTracker() {
+  const IconMap = useMemo(() => {
+    return Object.keys(Icons).filter((key) => {
+      return (
+        typeof (Icons as any)[key] === "object" ||
+        typeof (Icons as any)[key] === "function"
+      )
+    })
+  }, [])
+
   const [habits, setHabits] = useState<Habit[]>([])
+
   // Format: { "habitId-YYYY-MM-DD": true }
   const [logs, setLogs] = useState<Record<string, boolean>>({})
   const [currentWeekStart, setCurrentWeekStart] = useState(
@@ -354,6 +365,7 @@ export function useTracker() {
   }, [currentWeekStart])
 
   return {
+    IconMap,
     habits,
     logs,
     currentWeekStart,

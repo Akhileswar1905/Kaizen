@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Plus } from "lucide-react"
+import { IconPicker } from "./IconPicker"
 
 export function AddHabitModal({
   onAddHabit,
@@ -29,7 +30,7 @@ export function AddHabitModal({
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [targetDays, setTargetDays] = useState("7")
-  const [iconName, setIconName] = useState("default")
+  const [selectedIcon, setSelectedIcon] = useState<string>("Activity")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,24 +38,24 @@ export function AddHabitModal({
       title,
       description,
       target_days: parseInt(targetDays),
-      icon_name: iconName,
+      icon_name: selectedIcon,
     })
     // Reset and close
     setTitle("")
     setDescription("")
     setTargetDays("7")
-    setIconName("default")
+    setSelectedIcon("Activity")
     setOpen(false)
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-2">
-          <Plus className="h-4 w-4" /> Add Habit
+        <Button className="gap-2">
+          <Plus className="h-4 w-full" /> Add Habit
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-106.25">
+      <DialogContent className="sm:max-w-120">
         <DialogHeader>
           <DialogTitle>New Habit</DialogTitle>
           <DialogDescription>
@@ -99,18 +100,10 @@ export function AddHabitModal({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="icon">Icon</Label>
-              <Select value={iconName} onValueChange={setIconName}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Code">Code</SelectItem>
-                  <SelectItem value="Server">Server</SelectItem>
-                  <SelectItem value="Briefcase">Briefcase</SelectItem>
-                  <SelectItem value="PiggyBank">PiggyBank</SelectItem>
-                  <SelectItem value="default">Default</SelectItem>
-                </SelectContent>
-              </Select>
+              <IconPicker
+                selectedIconName={selectedIcon}
+                onSelectIcon={(name) => setSelectedIcon(name)}
+              />
             </div>
           </div>
           <DialogFooter className="mt-4">

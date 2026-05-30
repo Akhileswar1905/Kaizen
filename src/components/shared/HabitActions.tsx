@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { MoreVertical, Edit2, Trash2, Archive } from "lucide-react"
+import { IconPicker } from "./IconPicker"
 
 interface HabitActionsProps {
   habit: any
@@ -135,18 +136,10 @@ export function HabitActions({ habit, onUpdate, onDelete }: HabitActionsProps) {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-icon">Icon</Label>
-                <Select value={iconName} onValueChange={setIconName}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Code">Code</SelectItem>
-                    <SelectItem value="Server">Server</SelectItem>
-                    <SelectItem value="Briefcase">Briefcase</SelectItem>
-                    <SelectItem value="PiggyBank">PiggyBank</SelectItem>
-                    <SelectItem value="default">Default</SelectItem>
-                  </SelectContent>
-                </Select>
+                <IconPicker
+                  selectedIconName={iconName}
+                  onSelectIcon={setIconName}
+                />
               </div>
             </div>
             <DialogFooter className="mt-4">

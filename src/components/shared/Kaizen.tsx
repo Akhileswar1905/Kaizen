@@ -22,8 +22,9 @@ import { HabitActions } from "./HabitActions"
 import { FloatingMenu } from "./FloatingMenu"
 import { DsaSheet } from "./DsaSheet"
 import { JournalView } from "./JournalView"
+import * as Icons from "lucide-react"
 
-const IconMap: Record<string, React.ReactNode> = {
+const IconList: Record<string, React.ReactNode> = {
   Code: <Code className="h-5 w-5" />,
   Server: <Server className="h-5 w-5" />,
   Briefcase: <Briefcase className="h-5 w-5" />,
@@ -33,6 +34,7 @@ const IconMap: Record<string, React.ReactNode> = {
 
 export default function KaizenTracker() {
   const {
+    IconMap,
     habits,
     logs,
     currentWeekStart,
@@ -54,6 +56,8 @@ export default function KaizenTracker() {
     activeView,
     setActiveView,
   } = useTracker()
+
+  console.log("Icons", IconMap)
 
   if (activeView === "dsa") {
     return <DsaSheet onBack={() => setActiveView("dashboard")} />
@@ -168,7 +172,16 @@ export default function KaizenTracker() {
                       {/* Habit Info */}
                       <div className="flex min-w-50 items-center gap-4">
                         <div className="rounded-lg bg-secondary p-2 text-secondary-foreground">
-                          {IconMap[habit.icon_name] || IconMap.default}
+                          {(() => {
+                            const IconComponent = (Icons as any)[
+                              habit.icon_name
+                            ]
+                            return IconComponent ? (
+                              <IconComponent className="h-5 w-5" />
+                            ) : (
+                              <Activity className="h-5 w-5" />
+                            )
+                          })()}
                         </div>
                         <div>
                           <h3 className="font-semibold text-foreground">
