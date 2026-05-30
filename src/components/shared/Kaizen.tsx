@@ -110,7 +110,7 @@ export default function KaizenTracker() {
             </div>
 
             {/* Create Habit Button Trigger */}
-            <div className="xs:[&>*]:w-auto flex [&>*]:w-full">
+            <div className="xs:[&>*]:w-auto flex w-full">
               <AddHabitModal onAddHabit={addHabit} />
             </div>
           </div>

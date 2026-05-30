@@ -30,6 +30,8 @@ export function useTracker() {
 
   const [dsaData, setDsaData] = useState<Record<string, any[]>>({})
   const [dsaCompleted, setDsaCompleted] = useState<string[]>([])
+  // Add state to store cached notes from the DB: { "problem_id": "notes content" }
+  const [dsaNotes, setDsaNotes] = useState<Record<string, string>>({})
 
   const [journals, setJournals] = useState<any[]>([])
   const [isSavingJournal, setIsSavingJournal] = useState(false)
@@ -225,6 +227,24 @@ export function useTracker() {
     }
   }
 
+  const saveDsaNote = async (problemId: string, noteText: string) => {
+    // Instantly update local UI state for zero-latency feedback
+    setDsaNotes((prev) => ({ ...prev, [problemId]: noteText }))
+
+    // Persist changes directly to the Supabase Cloud
+    const { error } = await supabase
+      .from("dsa_problems")
+      .update({ notes: noteText })
+      .eq("id", problemId)
+      .select()
+    // .eq('user_id', currentUser.id) <-- Add this when we implement auth!
+
+    if (error) {
+      console.error("Failed to sync notes to Supabase:", error.message)
+      // Optional: Roll back local state if network failure occurs
+    }
+  }
+
   const saveJournalEntry = async (dateStr: string, content: string) => {
     setIsSavingJournal(true)
 
@@ -256,57 +276,81 @@ export function useTracker() {
     setIsSavingJournal(false)
   }
 
-  useEffect(() => {
-    const fetchWeekData = async () => {
-      fetchData()
-      const formattedDate = format(currentWeekStart, "yyyy-MM-dd")
-      const { data: reviewData } = await supabase
-        .from("weekly_reviews")
-        .select("*")
-        .eq("week_start_date", formattedDate)
-        .single()
+  const fetchWeekData = async () => {
+    fetchData()
+    const formattedDate = format(currentWeekStart, "yyyy-MM-dd")
+    const { data: reviewData } = await supabase
+      .from("weekly_reviews")
+      .select("*")
+      .eq("week_start_date", formattedDate)
+      .single()
 
-      if (reviewData) {
-        setSundayReview({
-          one_percent_win: reviewData.one_percent_win || "",
-          adjustments: reviewData.adjustments || "",
-        })
-      } else {
-        // Clear it if no review exists for this week yet
-        setSundayReview({ one_percent_win: "", adjustments: "" })
-      }
-
-      const { data: problems } = await supabase.from("dsa_problems").select("*")
-      if (problems) {
-        const grouped = problems.reduce(
-          (acc, curr) => {
-            if (!acc[curr.category]) acc[curr.category] = []
-            acc[curr.category].push(curr)
-            return acc
-          },
-          {} as Record<string, any[]>
-        )
-        setDsaData(grouped)
-      }
-
-      const { data: completions } = await supabase
-        .from("dsa_completions")
-        .select("problem_id")
-      if (completions) {
-        setDsaCompleted(completions.map((c) => c.problem_id))
-      }
-
-      const { data: journalData } = await supabase
-        .from("journals")
-        .select("*")
-        .order("entry_date", { ascending: false })
-
-      if (journalData) {
-        setJournals(journalData)
-      }
+    if (reviewData) {
+      setSundayReview({
+        one_percent_win: reviewData.one_percent_win || "",
+        adjustments: reviewData.adjustments || "",
+      })
+    } else {
+      // Clear it if no review exists for this week yet
+      setSundayReview({ one_percent_win: "", adjustments: "" })
     }
 
+    const { data: problems } = await supabase.from("dsa_problems").select("*")
+    if (problems) {
+      const grouped = problems.reduce(
+        (acc, curr) => {
+          if (!acc[curr.category]) acc[curr.category] = []
+          acc[curr.category].push(curr)
+          return acc
+        },
+        {} as Record<string, any[]>
+      )
+      setDsaData(grouped)
+    }
+
+    const { data: completions } = await supabase
+      .from("dsa_completions")
+      .select("problem_id")
+    if (completions) {
+      setDsaCompleted(completions.map((c) => c.problem_id))
+    }
+
+    const { data: journalData } = await supabase
+      .from("journals")
+      .select("*")
+      .order("entry_date", { ascending: false })
+
+    if (journalData) {
+      setJournals(journalData)
+    }
+  }
+
+  async function fetchDsaProgress() {
+    const { data, error } = await supabase
+      .from("dsa_problems")
+      .select("id, is_completed, notes")
+    // .eq('user_id', currentUser.id) <-- Add this when we implement auth!
+
+    if (data && !error) {
+      const completedIds = data.filter((p) => p.is_completed).map((p) => p.id)
+
+      // Reduce data array into an easily readable key-value pair map for the UI
+      const notesMap = data.reduce(
+        (acc, current) => {
+          if (current.notes) acc[current.id] = current.notes
+          return acc
+        },
+        {} as Record<string, string>
+      )
+
+      setDsaCompleted(completedIds)
+      setDsaNotes(notesMap)
+    }
+  }
+
+  useEffect(() => {
     fetchWeekData()
+    fetchDsaProgress()
   }, [currentWeekStart])
 
   return {
@@ -331,6 +375,9 @@ export function useTracker() {
     isSavingReview,
 
     dsaData,
+    dsaNotes,
+    setDsaNotes,
+    saveDsaNote,
     dsaCompleted,
     toggleDsaProblem,
 
