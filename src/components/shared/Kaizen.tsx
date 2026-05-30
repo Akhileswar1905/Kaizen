@@ -5,10 +5,6 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   ChevronLeft,
   ChevronRight,
-  Code,
-  Server,
-  Briefcase,
-  PiggyBank,
   Star,
   RefreshCw,
   Activity,
