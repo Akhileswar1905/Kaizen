@@ -28,6 +28,16 @@ export function useTracker() {
   })
   const [isSavingReview, setIsSavingReview] = useState(false)
 
+  const [dsaData, setDsaData] = useState<Record<string, any[]>>({})
+  const [dsaCompleted, setDsaCompleted] = useState<string[]>([])
+
+  const [journals, setJournals] = useState<any[]>([])
+  const [isSavingJournal, setIsSavingJournal] = useState(false)
+
+  const [activeView, setActiveView] = useState<"dashboard" | "dsa" | "journal">(
+    "dashboard"
+  )
+
   // Fetch initial data
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -51,93 +61,6 @@ export function useTracker() {
     setIsLoading(false)
   }, [])
 
-  const addHabit = async (newHabit: any) => {
-    const { data, error } = await supabase
-      .from("habits")
-      .insert([newHabit])
-      .select()
-      .single()
-
-    if (error) {
-      console.error("Error adding habit:", error)
-      return
-    }
-
-    // Immediately add it to the UI without refreshing the page
-    setHabits([...habits, data])
-  }
-
-  const updateHabit = async (habitId: string, updates: any) => {
-    const { data, error } = await supabase
-      .from("habits")
-      .update(updates)
-      .eq("id", habitId)
-      .select()
-      .single()
-
-    if (error) {
-      console.error("Error updating habit:", error)
-      return
-    }
-
-    // Update state immediately
-    setHabits(habits.map((h) => (h.id === habitId ? data : h)))
-  }
-
-  const deleteHabit = async (habitId: string) => {
-    const { error } = await supabase.from("habits").delete().eq("id", habitId)
-
-    if (error) {
-      console.error("Error deleting habit:", error)
-      return
-    }
-
-    // Remove from state immediately
-    setHabits(habits.filter((h) => h.id !== habitId))
-  }
-
-  const saveWeeklyReview = async (winText: string, adjustText: string) => {
-    setIsSavingReview(true)
-    const formattedDate = format(currentWeekStart, "yyyy-MM-dd")
-
-    const { error } = await supabase.from("weekly_reviews").upsert(
-      {
-        week_start_date: formattedDate,
-        one_percent_win: winText,
-        adjustments: adjustText,
-      },
-      { onConflict: "week_start_date" } // This prevents duplicates!
-    )
-
-    if (error) {
-      console.error("Error saving review:", error)
-    }
-    setIsSavingReview(false)
-  }
-
-  useEffect(() => {
-    const fetchWeekData = async () => {
-      fetchData()
-      const formattedDate = format(currentWeekStart, "yyyy-MM-dd")
-      const { data: reviewData } = await supabase
-        .from("weekly_reviews")
-        .select("*")
-        .eq("week_start_date", formattedDate)
-        .single()
-
-      if (reviewData) {
-        setSundayReview({
-          one_percent_win: reviewData.one_percent_win || "",
-          adjustments: reviewData.adjustments || "",
-        })
-      } else {
-        // Clear it if no review exists for this week yet
-        setSundayReview({ one_percent_win: "", adjustments: "" })
-      }
-    }
-
-    fetchWeekData()
-  }, [currentWeekStart])
   // Handle checking/unchecking a habit
   const toggleHabit = async (habitId: string, date: Date) => {
     const dateString = format(date, "yyyy-MM-dd")
@@ -220,6 +143,172 @@ export function useTracker() {
     }
   }
 
+  const addHabit = async (newHabit: any) => {
+    const { data, error } = await supabase
+      .from("habits")
+      .insert([newHabit])
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Error adding habit:", error)
+      return
+    }
+
+    // Immediately add it to the UI without refreshing the page
+    setHabits([...habits, data])
+  }
+
+  const updateHabit = async (habitId: string, updates: any) => {
+    const { data, error } = await supabase
+      .from("habits")
+      .update(updates)
+      .eq("id", habitId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Error updating habit:", error)
+      return
+    }
+
+    // Update state immediately
+    setHabits(habits.map((h) => (h.id === habitId ? data : h)))
+  }
+
+  const deleteHabit = async (habitId: string) => {
+    const { error } = await supabase.from("habits").delete().eq("id", habitId)
+
+    if (error) {
+      console.error("Error deleting habit:", error)
+      return
+    }
+
+    // Remove from state immediately
+    setHabits(habits.filter((h) => h.id !== habitId))
+  }
+
+  const saveWeeklyReview = async (winText: string, adjustText: string) => {
+    setIsSavingReview(true)
+    const formattedDate = format(currentWeekStart, "yyyy-MM-dd")
+
+    const { error } = await supabase.from("weekly_reviews").upsert(
+      {
+        week_start_date: formattedDate,
+        one_percent_win: winText,
+        adjustments: adjustText,
+      },
+      { onConflict: "week_start_date" } // This prevents duplicates!
+    )
+
+    if (error) {
+      console.error("Error saving review:", error)
+    }
+    setIsSavingReview(false)
+  }
+
+  const toggleDsaProblem = async (
+    problemId: string,
+    isCurrentlyCompleted: boolean
+  ) => {
+    if (isCurrentlyCompleted) {
+      // Uncheck it (Delete from Supabase)
+      await supabase
+        .from("dsa_completions")
+        .delete()
+        .eq("problem_id", problemId)
+      setDsaCompleted((prev) => prev.filter((id) => id !== problemId))
+    } else {
+      // Check it (Insert to Supabase)
+      await supabase.from("dsa_completions").insert([{ problem_id: problemId }])
+      setDsaCompleted((prev) => [...prev, problemId])
+    }
+  }
+
+  const saveJournalEntry = async (dateStr: string, content: string) => {
+    setIsSavingJournal(true)
+
+    const { data, error } = await supabase
+      .from("journals")
+      .upsert(
+        { entry_date: dateStr, content: content },
+        { onConflict: "entry_date" }
+      )
+      .select()
+      .single()
+
+    if (!error && data) {
+      // Update local state so the sidebar reflects the new content immediately
+      setJournals((prev) => {
+        const exists = prev.find((j) => j.entry_date === dateStr)
+        if (exists) {
+          return prev.map((j) => (j.entry_date === dateStr ? data : j))
+        }
+        // If it's a brand new entry, add it and sort by date descending
+        return [data, ...prev].sort((a, b) =>
+          b.entry_date.localeCompare(a.entry_date)
+        )
+      })
+    } else {
+      console.error("Error saving journal:", error)
+    }
+
+    setIsSavingJournal(false)
+  }
+
+  useEffect(() => {
+    const fetchWeekData = async () => {
+      fetchData()
+      const formattedDate = format(currentWeekStart, "yyyy-MM-dd")
+      const { data: reviewData } = await supabase
+        .from("weekly_reviews")
+        .select("*")
+        .eq("week_start_date", formattedDate)
+        .single()
+
+      if (reviewData) {
+        setSundayReview({
+          one_percent_win: reviewData.one_percent_win || "",
+          adjustments: reviewData.adjustments || "",
+        })
+      } else {
+        // Clear it if no review exists for this week yet
+        setSundayReview({ one_percent_win: "", adjustments: "" })
+      }
+
+      const { data: problems } = await supabase.from("dsa_problems").select("*")
+      if (problems) {
+        const grouped = problems.reduce(
+          (acc, curr) => {
+            if (!acc[curr.category]) acc[curr.category] = []
+            acc[curr.category].push(curr)
+            return acc
+          },
+          {} as Record<string, any[]>
+        )
+        setDsaData(grouped)
+      }
+
+      const { data: completions } = await supabase
+        .from("dsa_completions")
+        .select("problem_id")
+      if (completions) {
+        setDsaCompleted(completions.map((c) => c.problem_id))
+      }
+
+      const { data: journalData } = await supabase
+        .from("journals")
+        .select("*")
+        .order("entry_date", { ascending: false })
+
+      if (journalData) {
+        setJournals(journalData)
+      }
+    }
+
+    fetchWeekData()
+  }, [currentWeekStart])
+
   return {
     habits,
     logs,
@@ -232,6 +321,7 @@ export function useTracker() {
     weekCompletionPct,
     dsaStreak,
     currentWeekDays,
+
     addHabit,
     updateHabit,
     deleteHabit,
@@ -239,5 +329,16 @@ export function useTracker() {
     setSundayReview,
     saveWeeklyReview,
     isSavingReview,
+
+    dsaData,
+    dsaCompleted,
+    toggleDsaProblem,
+
+    journals,
+    saveJournalEntry,
+    isSavingJournal,
+
+    activeView,
+    setActiveView,
   }
 }

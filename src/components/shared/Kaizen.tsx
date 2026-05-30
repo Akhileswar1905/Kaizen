@@ -19,6 +19,9 @@ import { addDays, format } from "date-fns"
 import { Heatmap } from "./Heatmap"
 import { AddHabitModal } from "./AddHabit"
 import { HabitActions } from "./HabitActions"
+import { FloatingMenu } from "./FloatingMenu"
+import { DsaSheet } from "./DsaSheet"
+import { JournalView } from "./JournalView"
 
 const IconMap: Record<string, React.ReactNode> = {
   Code: <Code className="h-5 w-5" />,
@@ -48,7 +51,17 @@ export default function KaizenTracker() {
     setSundayReview,
     saveWeeklyReview,
     isSavingReview,
+    activeView,
+    setActiveView,
   } = useTracker()
+
+  if (activeView === "dsa") {
+    return <DsaSheet onBack={() => setActiveView("dashboard")} />
+  }
+
+  if (activeView === "journal") {
+    return <JournalView onBack={() => setActiveView("dashboard")} />
+  }
 
   return (
     <div className="flex min-h-screen justify-center bg-background p-6 font-sans text-foreground md:p-12">
@@ -284,6 +297,10 @@ export default function KaizenTracker() {
         </div>
         <Heatmap logs={logs} />
       </div>
+      <FloatingMenu
+        onOpenDSA={() => setActiveView("dsa")}
+        onOpenJournal={() => setActiveView("journal")}
+      />
     </div>
   )
 }
