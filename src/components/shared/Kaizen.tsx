@@ -45,10 +45,14 @@ export default function KaizenTracker() {
     <div className="flex min-h-screen justify-center bg-background p-6 font-sans text-foreground md:p-12">
       <div className="w-full max-w-4xl space-y-8">
         {/* Header Section */}
-        <header className="flex items-center justify-between">
-          <div className="flex items-center">
+        <header className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
             <div>
-              <img src="/light_icon.png" alt="Kaizen Logo" className="h-25" />
+              <img
+                src="/light_icon.png"
+                alt="Kaizen Logo"
+                className="h-12 w-auto sm:h-16"
+              />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Kaizen</h1>
@@ -57,11 +61,12 @@ export default function KaizenTracker() {
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+
+          <div className="flex w-full items-center justify-between sm:w-auto sm:justify-end sm:space-x-4">
             <Button variant="outline" size="icon" onClick={prevWeek}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="font-semibold text-foreground">
+            <span className="text-sm font-semibold text-foreground sm:text-base">
               {format(currentWeekStart, "d MMM")} –{" "}
               {format(addDays(currentWeekStart, 6), "d MMM")}
             </span>
