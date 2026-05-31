@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import { startOfWeek, subWeeks, addWeeks, format } from "date-fns"
 import { supabase } from "@/lib/supabase"
 import * as Icons from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
 
 export type Habit = {
   id: string
@@ -23,6 +24,9 @@ export function useTracker() {
       )
     })
   }, [])
+
+  const { user } = useAuth() // Get the authenticated user
+  const userId = user?.id || "anonymous" // Fallback to "anonymous" if user is not logged in
 
   const [habits, setHabits] = useState<Habit[]>([])
 
@@ -47,21 +51,27 @@ export function useTracker() {
   const [journals, setJournals] = useState<any[]>([])
   const [isSavingJournal, setIsSavingJournal] = useState(false)
 
-  const [activeView, setActiveView] = useState<"dashboard" | "dsa" | "journal">(
-    "dashboard"
-  )
+  const [activeView, setActiveView] = useState<
+    "dashboard" | "dsa" | "journal" | "finance"
+  >("dashboard")
 
   // Fetch initial data
   const fetchData = useCallback(async () => {
     setIsLoading(true)
 
     // 1. Fetch Habits
-    const { data: habitsData } = await supabase.from("habits").select("*")
+    const { data: habitsData } = await supabase
+      .from("habits")
+      .select("*")
+      .eq("user_id", userId) // Filter habits by the authenticated user
 
     if (habitsData) setHabits(habitsData)
 
     // 2. Fetch all logs (you might want to filter this by date range later)
-    const { data: logsData } = await supabase.from("habit_logs").select("*")
+    const { data: logsData } = await supabase
+      .from("habit_logs")
+      .select("*")
+      .eq("user_id", userId) // Filter logs by the authenticated user
 
     if (logsData) {
       const logMap: Record<string, boolean> = {}
@@ -87,6 +97,7 @@ export function useTracker() {
     // Background Database update
     const { error } = await supabase.from("habit_logs").upsert(
       {
+        user_id: userId,
         habit_id: habitId,
         log_date: dateString,
         is_completed: newStatus,
@@ -159,7 +170,7 @@ export function useTracker() {
   const addHabit = async (newHabit: any) => {
     const { data, error } = await supabase
       .from("habits")
-      .insert([newHabit])
+      .insert([{ ...newHabit, user_id: userId }]) // Inject user_id
       .select()
       .single()
 
@@ -177,6 +188,7 @@ export function useTracker() {
       .from("habits")
       .update(updates)
       .eq("id", habitId)
+      .eq("user_id", userId) // Ensure users can only update their own habits
       .select()
       .single()
 
@@ -190,7 +202,11 @@ export function useTracker() {
   }
 
   const deleteHabit = async (habitId: string) => {
-    const { error } = await supabase.from("habits").delete().eq("id", habitId)
+    const { error } = await supabase
+      .from("habits")
+      .delete()
+      .eq("id", habitId)
+      .eq("user_id", userId)
 
     if (error) {
       console.error("Error deleting habit:", error)
@@ -210,6 +226,7 @@ export function useTracker() {
         week_start_date: formattedDate,
         one_percent_win: winText,
         adjustments: adjustText,
+        user_id: userId,
       },
       { onConflict: "week_start_date" } // This prevents duplicates!
     )
@@ -230,10 +247,13 @@ export function useTracker() {
         .from("dsa_completions")
         .delete()
         .eq("problem_id", problemId)
+        .eq("user_id", userId)
       setDsaCompleted((prev) => prev.filter((id) => id !== problemId))
     } else {
       // Check it (Insert to Supabase)
-      await supabase.from("dsa_completions").insert([{ problem_id: problemId }])
+      await supabase
+        .from("dsa_completions")
+        .insert([{ problem_id: problemId, user_id: userId }])
       setDsaCompleted((prev) => [...prev, problemId])
     }
   }
@@ -248,8 +268,6 @@ export function useTracker() {
       .update({ notes: noteText })
       .eq("id", problemId)
       .select()
-    // .eq('user_id', currentUser.id) <-- Add this when we implement auth!
-
     if (error) {
       console.error("Failed to sync notes to Supabase:", error.message)
       // Optional: Roll back local state if network failure occurs
@@ -262,7 +280,7 @@ export function useTracker() {
     const { data, error } = await supabase
       .from("journals")
       .upsert(
-        { entry_date: dateStr, content: content },
+        { entry_date: dateStr, content: content, user_id: userId },
         { onConflict: "entry_date" }
       )
       .select()
@@ -322,6 +340,7 @@ export function useTracker() {
     const { data: completions } = await supabase
       .from("dsa_completions")
       .select("problem_id")
+      .eq("user_id", userId)
     if (completions) {
       setDsaCompleted(completions.map((c) => c.problem_id))
     }
@@ -329,6 +348,7 @@ export function useTracker() {
     const { data: journalData } = await supabase
       .from("journals")
       .select("*")
+      .eq("user_id", userId)
       .order("entry_date", { ascending: false })
 
     if (journalData) {
@@ -337,16 +357,18 @@ export function useTracker() {
   }
 
   async function fetchDsaProgress() {
-    const { data, error } = await supabase
-      .from("dsa_problems")
-      .select("id, is_completed, notes")
-    // .eq('user_id', currentUser.id) <-- Add this when we implement auth!
+    const { data, error } = await supabase.from("dsa_problems").select("id")
 
-    if (data && !error) {
-      const completedIds = data.filter((p) => p.is_completed).map((p) => p.id)
+    const { data: progressData, error: progressError } = await supabase
+      .from("dsa_completions")
+      .select("problem_id")
+      .eq("user_id", userId)
+
+    if (data && !error && !progressError) {
+      const completedIds = progressData?.map((p) => p.problem_id)
 
       // Reduce data array into an easily readable key-value pair map for the UI
-      const notesMap = data.reduce(
+      const notesMap = completedIds?.reduce(
         (acc, current) => {
           if (current.notes) acc[current.id] = current.notes
           return acc
@@ -354,7 +376,7 @@ export function useTracker() {
         {} as Record<string, string>
       )
 
-      setDsaCompleted(completedIds)
+      setDsaCompleted(completedIds || [])
       setDsaNotes(notesMap)
     }
   }

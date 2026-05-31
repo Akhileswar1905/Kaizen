@@ -12,14 +12,14 @@ import {
 } from "lucide-react"
 import { useTracker } from "@/hooks/useTracker"
 import { addDays, format } from "date-fns"
-import { Heatmap } from "./Habits/Heatmap"
-import { AddHabitModal } from "./Habits/AddHabit"
-import { HabitActions } from "./Habits/HabitActions"
-import { FloatingMenu } from "./Widgets/FloatingMenu"
-import { DsaSheet } from "./Dsa/DsaSheet"
-import { JournalView } from "./Views/JournalView"
+import { Heatmap } from "../Habits/Heatmap"
+import { AddHabitModal } from "../Habits/AddHabit"
+import { HabitActions } from "../Habits/HabitActions"
+import { FloatingMenu } from "../Widgets/FloatingMenu"
+import { DsaSheet } from "../Dsa/DsaSheet"
+import { JournalView } from "./JournalView"
 import * as Icons from "lucide-react"
-import { FinanceView } from "./Views/FinanceView"
+import { FinanceView } from "./FinanceView"
 
 export default function KaizenTracker() {
   const {
@@ -145,6 +145,13 @@ export default function KaizenTracker() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               <p className="text-sm font-medium text-muted-foreground">
                 Loading habits...
+              </p>
+            </div>
+          ) : habits.length == 0 ? (
+            <div className="flex h-[50vh] w-full flex-col items-center justify-center gap-4">
+              <Activity className="h-8 w-8 text-muted-foreground" />
+              <p className="text-sm font-medium text-muted-foreground">
+                No habits yet. Start by adding one!
               </p>
             </div>
           ) : (

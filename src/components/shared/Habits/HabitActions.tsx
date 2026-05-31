@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { MoreVertical, Edit2, Trash2, Archive } from "lucide-react"
-import { IconPicker } from "./IconPicker"
+import { IconPicker } from "../Widgets/IconPicker"
 
 interface HabitActionsProps {
   habit: any

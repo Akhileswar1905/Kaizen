@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Plus } from "lucide-react"
-import { IconPicker } from "./IconPicker"
+import { IconPicker } from "../Widgets/IconPicker"
 
 export function AddHabitModal({
   onAddHabit,
