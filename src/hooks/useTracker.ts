@@ -259,15 +259,27 @@ export function useTracker() {
   }
 
   const saveDsaNote = async (problemId: string, noteText: string) => {
+    // 1. Guard clause: Ensure we have a user
+    if (!user?.id) {
+      console.error("No user found")
+      return
+    }
+
     // Instantly update local UI state for zero-latency feedback
     setDsaNotes((prev) => ({ ...prev, [problemId]: noteText }))
 
-    // Persist changes directly to the Supabase Cloud
-    const { error } = await supabase
-      .from("dsa_problems")
-      .update({ notes: noteText })
-      .eq("id", problemId)
-      .select()
+    // Persist changes directly to the Supabase Cloud using UPSERT
+    const { error } = await supabase.from("dsa_completions").upsert(
+      {
+        user_id: user.id, // Explicitly tie it to the user
+        problem_id: problemId, // The ID of the problem
+        notes: noteText, // The actual note
+      },
+      {
+        onConflict: "user_id,problem_id", // Tells Supabase how to find the specific row to update
+      }
+    )
+
     if (error) {
       console.error("Failed to sync notes to Supabase:", error.message)
       // Optional: Roll back local state if network failure occurs
@@ -312,6 +324,7 @@ export function useTracker() {
       .from("weekly_reviews")
       .select("*")
       .eq("week_start_date", formattedDate)
+      .eq("user_id", userId)
       .single()
 
     if (reviewData) {
@@ -361,16 +374,16 @@ export function useTracker() {
 
     const { data: progressData, error: progressError } = await supabase
       .from("dsa_completions")
-      .select("problem_id")
+      .select("problem_id, notes")
       .eq("user_id", userId)
 
     if (data && !error && !progressError) {
       const completedIds = progressData?.map((p) => p.problem_id)
 
       // Reduce data array into an easily readable key-value pair map for the UI
-      const notesMap = completedIds?.reduce(
+      const notesMap = progressData?.reduce(
         (acc, current) => {
-          if (current.notes) acc[current.id] = current.notes
+          if (current.notes) acc[current.problem_id] = current.notes
           return acc
         },
         {} as Record<string, string>
