@@ -52,7 +52,7 @@ export function useTracker() {
   const [isSavingJournal, setIsSavingJournal] = useState(false)
 
   const [activeView, setActiveView] = useState<
-    "dashboard" | "dsa" | "journal" | "finance" | "system-design"
+    "dashboard" | "dsa" | "journal" | "finance" | "system-design" | "notes"
   >("dashboard")
 
   // Fetch initial data

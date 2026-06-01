@@ -21,6 +21,7 @@ import { JournalView } from "./JournalView"
 import * as Icons from "lucide-react"
 import { FinanceView } from "./FinanceView"
 import { SystemDesignHub } from "./SystemDesignTracker"
+import { NotesTracker } from "../Notes"
 
 export default function KaizenTracker() {
   const {
@@ -60,6 +61,10 @@ export default function KaizenTracker() {
 
   if (activeView === "system-design") {
     return <SystemDesignHub onBack={() => setActiveView("dashboard")} />
+  }
+
+  if (activeView === "notes") {
+    return <NotesTracker onBack={() => setActiveView("dashboard")} />
   }
 
   return (
@@ -317,6 +322,7 @@ export default function KaizenTracker() {
         onOpenJournal={() => setActiveView("journal")}
         onOpenFinance={() => setActiveView("finance")}
         onOpenSystemDesign={() => setActiveView("system-design")}
+        onOpenNotes={() => setActiveView("notes")}
       />
     </div>
   )
