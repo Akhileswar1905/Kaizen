@@ -8,10 +8,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BookOpen, ExternalLink } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  CheckCircle2,
+  Circle,
+  ExternalLink,
+  Sparkles,
+  BookMarked,
+} from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export function VarsityTracker() {
   const { user } = useAuth()
@@ -75,99 +81,176 @@ export function VarsityTracker() {
   const progressPercentage =
     Math.round((completedCount / totalChapters) * 100) || 0
 
-  if (loading)
-    return <div className="h-40 animate-pulse rounded-xl bg-muted"></div>
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-32 w-full animate-pulse rounded-2xl border border-border/40 bg-muted/20" />
+        <div className="h-64 w-full animate-pulse rounded-2xl border border-border/40 bg-muted/10" />
+      </div>
+    )
+  }
 
   return (
-    <Card className="border-border/50 shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2 text-xl font-bold">
-            <BookOpen className="h-5 w-5 text-primary" />
-            Varsity Progress
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {completedCount} of {totalChapters} chapters completed
-          </p>
+    <div className="animate-fade-in space-y-6">
+      {/* Core Jumbotron Panel */}
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6 shadow-sm">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-xl space-y-1.5">
+            <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+              <Sparkles className="h-4 w-4 text-foreground/60" />
+              Varsity Curriculum
+            </h2>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Track your academic modules and reading assignments continuously
+              to maintain momentum through the semester.
+            </p>
+          </div>
+          <div className="w-full shrink-0 rounded-xl border border-border/40 bg-muted/10 p-4 sm:w-64">
+            <div className="mb-2 flex justify-between text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+              <span>Overall Progress</span>
+              <span className="font-mono font-semibold text-foreground">
+                {progressPercentage}%
+              </span>
+            </div>
+            <Progress
+              value={progressPercentage}
+              className="mb-2 h-1.5 bg-muted"
+            />
+            <div className="text-right text-[10px] font-medium text-muted-foreground">
+              {completedCount} / {totalChapters} Chapters
+            </div>
+          </div>
         </div>
-        <div className="text-2xl font-bold text-primary">
-          {progressPercentage}%
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <Progress value={progressPercentage} className="h-2 w-full" />
+      </div>
 
-        <Accordion type="single" collapsible className="w-full">
-          {varsityModules.map((mod) => {
-            const moduleCompleted = mod.chapters.filter((_, idx) =>
-              completedSet.has(`${mod.id}-${idx}`)
-            ).length
+      {/* Accordion List */}
+      <Accordion type="single" collapsible className="w-full space-y-4">
+        {varsityModules.map((mod) => {
+          const moduleCompletedCount = mod.chapters.filter((_, idx) =>
+            completedSet.has(`${mod.id}-${idx}`)
+          ).length
+          const isFullyCompleted = moduleCompletedCount === mod.chapters.length
 
-            return (
-              <AccordionItem
-                key={mod.id}
-                value={`item-${mod.id}`}
-                className="border-b-border/50"
-              >
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex flex-col items-start text-left">
-                    <span className="font-semibold text-foreground">
-                      {mod.title}
+          return (
+            <AccordionItem
+              key={mod.id}
+              value={`item-${mod.id}`}
+              className={cn(
+                "group relative overflow-hidden rounded-2xl border border-border/40 bg-card transition-all duration-300 hover:border-border/80 hover:shadow-sm data-[state=open]:border-border/80",
+                isFullyCompleted && "border-border/60 bg-muted/5"
+              )}
+            >
+              <AccordionTrigger className="px-5 py-4 transition-colors hover:bg-muted/30 hover:no-underline">
+                <div className="flex flex-1 items-center justify-between pr-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background shadow-sm">
+                      <BookMarked className="h-4 w-4 text-foreground/70" />
+                    </div>
+                    <div className="flex flex-col items-start space-y-1 text-left">
+                      <span className="line-clamp-1 text-sm font-semibold tracking-tight text-foreground transition-colors group-hover:text-foreground/90">
+                        {mod.title}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                        <span className="tracking-wider uppercase">
+                          Module {String(mod.id).padStart(2, "0")}
+                        </span>
+                        <span className="opacity-40">•</span>
+                        <span>{mod.chapters.length} Chapters</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="hidden text-[11px] font-medium text-muted-foreground sm:block">
+                    Index:{" "}
+                    <span className="font-mono font-bold text-foreground">
+                      {moduleCompletedCount}
                     </span>
-                    <span className="text-xs font-normal text-muted-foreground">
-                      Module {mod.id} • {moduleCompleted}/{mod.chapters.length}{" "}
-                      completed
+                    <span className="text-muted-foreground/40">
+                      /{mod.chapters.length}
                     </span>
                   </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="flex flex-col gap-3 pt-2">
-                    {mod.chapters.map((chapter, index) => {
-                      const isChecked = completedSet.has(`${mod.id}-${index}`)
-                      return (
-                        <div
-                          key={index}
-                          className="group flex items-center justify-between rounded-md p-2 transition-colors hover:bg-muted/50"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <Checkbox
-                              id={`mod-${mod.id}-chap-${index}`}
-                              checked={isChecked}
-                              onCheckedChange={() =>
-                                toggleChapter(mod.id, index, isChecked)
-                              }
-                              className="h-5 w-5"
-                            />
-                            <label
-                              htmlFor={`mod-${mod.id}-chap-${index}`}
-                              className={`cursor-pointer text-sm leading-none font-medium select-none ${
-                                isChecked
-                                  ? "text-muted-foreground line-through"
-                                  : "text-foreground"
-                              }`}
-                            >
-                              {index + 1}. {chapter.title}
-                            </label>
-                          </div>
-                          <a
-                            href={chapter.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-muted-foreground opacity-0 transition-colors group-hover:opacity-100 hover:text-primary"
-                            title="Read Chapter"
+                </div>
+              </AccordionTrigger>
+
+              <AccordionContent className="px-5 pt-1 pb-5">
+                <div className="mt-3 flex flex-col gap-2 border-t border-border/30 pt-4">
+                  {mod.chapters.map((chapter, index) => {
+                    const isChecked = completedSet.has(`${mod.id}-${index}`)
+
+                    return (
+                      <div
+                        key={index}
+                        className={cn(
+                          "group/row flex items-center justify-between rounded-xl border border-border/40 p-3 transition-all duration-200 hover:border-border/80 hover:bg-muted/30",
+                          isChecked
+                            ? "border-border/20 bg-muted/10 opacity-70 hover:opacity-100"
+                            : "bg-card"
+                        )}
+                      >
+                        <div className="flex min-w-0 flex-1 items-center gap-4">
+                          <button
+                            onClick={() =>
+                              toggleChapter(mod.id, index, isChecked)
+                            }
+                            className="shrink-0 transition-transform focus:outline-none active:scale-90"
                           >
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
+                            {isChecked ? (
+                              <CheckCircle2 className="h-5 w-5 stroke-2 text-foreground" />
+                            ) : (
+                              <Circle className="h-5 w-5 text-muted-foreground/30 transition-colors group-hover/row:text-muted-foreground/60" />
+                            )}
+                          </button>
+
+                          <div
+                            onClick={() =>
+                              toggleChapter(mod.id, index, isChecked)
+                            }
+                            className="min-w-0 flex-1 cursor-pointer space-y-0.5"
+                          >
+                            <span
+                              className={cn(
+                                "block truncate text-sm font-medium tracking-tight transition-colors",
+                                isChecked
+                                  ? "text-muted-foreground line-through decoration-muted-foreground/30"
+                                  : "text-foreground"
+                              )}
+                            >
+                              {chapter.title}
+                            </span>
+                            <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground/60">
+                              <span className="font-mono tracking-wider uppercase">
+                                Chapter {String(index + 1).padStart(2, "0")}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      )
-                    })}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            )
-          })}
-        </Accordion>
-      </CardContent>
-    </Card>
+
+                        {chapter.url && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="ml-2 h-8 w-8 shrink-0 rounded-lg border border-transparent opacity-0 transition-opacity group-hover/row:opacity-100 hover:border-border/40 hover:bg-background"
+                            asChild
+                          >
+                            <a
+                              href={chapter.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Read Chapter"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )
+        })}
+      </Accordion>
+    </div>
   )
 }
