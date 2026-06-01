@@ -304,6 +304,7 @@ export default function KaizenTracker() {
         onOpenDSA={() => setActiveView("dsa")}
         onOpenJournal={() => setActiveView("journal")}
         onOpenFinance={() => setActiveView("finance")}
+        onOpenSystemDesign={() => setActiveView("system-design")}
       />
     </div>
   )

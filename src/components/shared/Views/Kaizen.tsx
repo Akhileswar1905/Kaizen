@@ -20,6 +20,7 @@ import { DsaSheet } from "../Dsa/DsaSheet"
 import { JournalView } from "./JournalView"
 import * as Icons from "lucide-react"
 import { FinanceView } from "./FinanceView"
+import { SystemDesignHub } from "./SystemDesignTracker"
 
 export default function KaizenTracker() {
   const {
@@ -55,6 +56,10 @@ export default function KaizenTracker() {
 
   if (activeView === "finance") {
     return <FinanceView onBack={() => setActiveView("dashboard")} />
+  }
+
+  if (activeView === "system-design") {
+    return <SystemDesignHub onBack={() => setActiveView("dashboard")} />
   }
 
   return (
@@ -311,6 +316,7 @@ export default function KaizenTracker() {
         onOpenDSA={() => setActiveView("dsa")}
         onOpenJournal={() => setActiveView("journal")}
         onOpenFinance={() => setActiveView("finance")}
+        onOpenSystemDesign={() => setActiveView("system-design")}
       />
     </div>
   )
