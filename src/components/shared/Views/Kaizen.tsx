@@ -17,9 +17,10 @@ import {
   Play,
   Pause,
   RotateCcw,
+  X,
 } from "lucide-react"
 import { useTracker } from "@/hooks/useTracker"
-import { addDays, format } from "date-fns"
+import { addDays, subDays, format } from "date-fns"
 import { Heatmap } from "../Habits/Heatmap"
 import { AddHabitModal } from "../Habits/AddHabit"
 import { HabitActions } from "../Habits/HabitActions"
@@ -36,6 +37,7 @@ import { cn } from "@/lib/utils"
 
 export default function KaizenTracker() {
   const [isStatusOpen, setIsStatusOpen] = useState(false)
+  const [isStreaksModalOpen, setIsStreaksModalOpen] = useState(false)
 
   const {
     habits,
@@ -68,6 +70,38 @@ export default function KaizenTracker() {
     setPomoMode,
     formatPomoTime,
   } = useTracker()
+
+  // Helper to calculate the current streak for any given habit
+  const getHabitStreak = (habitId: string) => {
+    let streak = 0
+    let currentDate = new Date()
+
+    // Check today first
+    let dateStr = format(currentDate, "yyyy-MM-dd")
+    if (logs[`${habitId}-${dateStr}`]) {
+      streak++
+      currentDate = subDays(currentDate, 1)
+    } else {
+      // Grace period: If today isn't logged, check yesterday. If yesterday is logged, the streak is still alive.
+      currentDate = subDays(currentDate, 1)
+      dateStr = format(currentDate, "yyyy-MM-dd")
+      if (!logs[`${habitId}-${dateStr}`]) {
+        return 0 // Neither today nor yesterday logged, streak is 0
+      }
+    }
+
+    // Keep counting backwards continuously until a day is missed
+    while (true) {
+      dateStr = format(currentDate, "yyyy-MM-dd")
+      if (logs[`${habitId}-${dateStr}`]) {
+        streak++
+        currentDate = subDays(currentDate, 1)
+      } else {
+        break
+      }
+    }
+    return streak
+  }
 
   const renderContent = () => {
     if (activeView === "dsa") {
@@ -169,10 +203,11 @@ export default function KaizenTracker() {
                   "text-emerald-500 bg-emerald-500/5 border-emerald-500/10",
               },
               {
-                label: "DSA streak (days)",
+                label: "Habit Streaks",
                 value: dsaStreak,
                 icon: Flame,
                 color: "text-orange-500 bg-orange-500/5 border-orange-500/10",
+                onClick: () => setIsStreaksModalOpen(true),
               },
               {
                 label: "Week completion",
@@ -183,9 +218,11 @@ export default function KaizenTracker() {
             ].map((stat, i) => (
               <Card
                 key={i}
+                onClick={stat.onClick}
                 className={cn(
                   "relative overflow-hidden border border-border/50 bg-card/60 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-border hover:shadow-md",
-                  stat.color
+                  stat.color,
+                  stat.onClick && "cursor-pointer hover:scale-[1.02]"
                 )}
               >
                 <CardContent className="flex flex-col items-center justify-center p-4 text-center md:p-6">
@@ -523,7 +560,73 @@ export default function KaizenTracker() {
         onClose={() => setIsStatusOpen(false)}
         stats={playerStats}
       />
+
+      {/* Habit Streaks Custom Modal (Matches Theme Perfectly) */}
+      {isStreaksModalOpen && (
+        <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-background/80 p-4 backdrop-blur-sm duration-200 fade-in">
+          <Card className="relative w-full max-w-md overflow-hidden border-border/50 bg-card/95 shadow-xl backdrop-blur-md">
+            <CardHeader className="border-b border-border/20 pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                  <Flame className="h-5 w-5 text-orange-500" />
+                  Active Streaks
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsStreaksModalOpen(false)}
+                  className="h-8 w-8 rounded-full hover:bg-muted"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="max-h-[60vh] space-y-3 overflow-y-auto p-4">
+                {habits
+                  .filter((h) => !h.is_archived)
+                  .sort((a, b) => getHabitStreak(b.id) - getHabitStreak(a.id))
+                  .map((habit) => {
+                    const streak = getHabitStreak(habit.id)
+                    const IconComponent =
+                      (Icons as any)[habit.icon_name] || Activity
+
+                    return (
+                      <div
+                        key={habit.id}
+                        className="flex items-center justify-between rounded-xl border border-border/30 bg-muted/20 p-3 transition-colors hover:bg-muted/40"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-lg border border-border/50 bg-background p-2 text-foreground/80 shadow-sm">
+                            <IconComponent className="h-4 w-4" />
+                          </div>
+                          <span className="text-sm font-semibold">
+                            {habit.title}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1">
+                          <Flame className="h-3.5 w-3.5 text-orange-500" />
+                          <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
+                            {streak} {streak === 1 ? "Day" : "Days"}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                {habits.filter((h) => !h.is_archived).length === 0 && (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    No active habits to track.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {renderContent()}
+
       <FloatingMenu
         onOpenDSA={() => setActiveView("dsa")}
         onOpenJournal={() => setActiveView("journal")}

@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "esnext",
+    "module": "nodenext",
+    "skipLibCheck": true,
+    "outDir": "../../dist-electron"
+  },
+  "include": ["*.ts", "**/*.ts"]
+}

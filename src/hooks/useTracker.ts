@@ -466,31 +466,37 @@ export function useTracker() {
 
   // 1. Audio Notification
   const playSystemAlarm = useCallback(() => {
-    try {
-      const AudioContext =
-        window.AudioContext || (window as any).webkitAudioContext
-      if (!AudioContext) return
-
-      const ctx = new AudioContext()
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-
-      osc.type = "sine"
-      osc.frequency.setValueAtTime(600, ctx.currentTime)
-      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 1.5)
-
-      gain.gain.setValueAtTime(0.5, ctx.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 1.5)
-
-      osc.start()
-      osc.stop(ctx.currentTime + 1.5)
-    } catch (error) {
-      console.log("Audio play failed", error)
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    
+    const ctx = new AudioContext();
+    
+    // Ensure the audio context is resumed (browser safety requirement)
+    if (ctx.state === 'suspended') {
+      ctx.resume();
     }
-  }, [])
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.type = "sine";
+    // Solo Leveling style: Sharp, rising "system" tone
+    osc.frequency.setValueAtTime(400, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(800, ctx.currentTime + 0.5);
+    
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 1.5);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 1.5);
+  } catch (error) {
+    console.error("Audio playback blocked by browser policy", error);
+  }
+}, []);
 
   // 2. Supabase Realtime Cross-Browser Sync
   useEffect(() => {
