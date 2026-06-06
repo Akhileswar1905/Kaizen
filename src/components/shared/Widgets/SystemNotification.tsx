@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { ShieldAlert, Sparkles } from "lucide-react"
+import { Sparkles, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface SystemNotificationProps {
@@ -35,37 +35,63 @@ export function SystemNotification({
       className={cn(
         "fixed z-50 transition-all duration-500",
         isLevelUp
-          ? "pointer-events-auto inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          ? "pointer-events-auto inset-0 flex items-center justify-center bg-black/90 backdrop-blur-md"
           : "pointer-events-none top-6 right-6 flex flex-col gap-2"
       )}
     >
       <div
         className={cn(
-          "pointer-events-auto animate-in overflow-hidden border bg-zinc-950/95 shadow-2xl transition-all duration-300",
+          "pointer-events-auto relative animate-in overflow-hidden bg-zinc-950/95 backdrop-blur-xl transition-all duration-300",
           isLevelUp
-            ? "relative w-full max-w-md scale-100 rounded-none border-white/40 p-6 text-center tracking-tight shadow-white/10 duration-500 zoom-in-95"
-            : "w-80 rounded-sm border-zinc-800 p-4 shadow-black/80 fade-in slide-in-from-top-4"
+            ? "w-full max-w-md scale-100 border border-white/40 p-8 text-center shadow-[0_0_60px_-10px_rgba(255,255,255,0.2)] duration-500 zoom-in-95"
+            : "w-80 border border-zinc-700 p-5 shadow-[0_0_30px_-5px_rgba(255,255,255,0.1)] fade-in slide-in-from-top-4"
         )}
       >
-        {/* Solo Leveling Corner UI Framing Accents (Only for Level Up Screens) */}
-        {isLevelUp && (
-          <>
-            <div className="absolute top-2 left-2 h-2 w-2 border-t-2 border-l-2 border-white/60" />
-            <div className="absolute top-2 right-2 h-2 w-2 border-t-2 border-r-2 border-white/60" />
-            <div className="absolute bottom-2 left-2 h-2 w-2 border-b-2 border-l-2 border-white/60" />
-            <div className="absolute right-2 bottom-2 h-2 w-2 border-r-2 border-b-2 border-white/60" />
-          </>
-        )}
-
-        {/* Top Status Border Strip */}
+        {/* Solo Leveling Corner UI Framing Accents (Monochrome) */}
         <div
           className={cn(
-            "absolute top-0 left-0 h-[2px] bg-white transition-all",
-            isLevelUp ? "w-full animate-pulse opacity-80" : "w-1/3 opacity-40"
+            "absolute top-0 left-0 h-4 w-4 border-t-[3px] border-l-[3px]",
+            isLevelUp
+              ? "border-white/80 shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+              : "border-zinc-500"
+          )}
+        />
+        <div
+          className={cn(
+            "absolute top-0 right-0 h-4 w-4 border-t-[3px] border-r-[3px]",
+            isLevelUp
+              ? "border-white/80 shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+              : "border-zinc-500"
+          )}
+        />
+        <div
+          className={cn(
+            "absolute bottom-0 left-0 h-4 w-4 border-b-[3px] border-l-[3px]",
+            isLevelUp
+              ? "border-white/80 shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+              : "border-zinc-500"
+          )}
+        />
+        <div
+          className={cn(
+            "absolute right-0 bottom-0 h-4 w-4 border-r-[3px] border-b-[3px]",
+            isLevelUp
+              ? "border-white/80 shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+              : "border-zinc-500"
           )}
         />
 
-        <div className="space-y-4">
+        {/* Top Status Border Strip (Scanning Effect) */}
+        <div
+          className={cn(
+            "absolute top-0 left-0 h-[1px] transition-all",
+            isLevelUp
+              ? "w-full animate-pulse bg-white opacity-90 drop-shadow-[0_0_5px_rgba(255,255,255,1)]"
+              : "w-1/2 bg-zinc-400 opacity-60"
+          )}
+        />
+
+        <div className="space-y-5">
           {/* Header Module */}
           <div
             className={cn(
@@ -74,55 +100,82 @@ export function SystemNotification({
             )}
           >
             {isLevelUp ? (
-              <Sparkles className="h-4 w-4 animate-spin text-white [animation-duration:3s]" />
+              <Sparkles className="h-5 w-5 animate-pulse text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] [animation-duration:2s]" />
             ) : (
-              <ShieldAlert className="h-3.5 w-3.5 text-zinc-400" />
+              <Info className="h-4 w-4 text-zinc-400" />
             )}
             <span
               className={cn(
-                "font-mono font-black tracking-[0.25em] text-white uppercase",
-                isLevelUp ? "text-xs" : "text-[10px] text-zinc-400"
+                "font-mono font-black tracking-[0.3em] uppercase",
+                isLevelUp
+                  ? "text-sm text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+                  : "text-[11px] text-zinc-400 drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]"
               )}
             >
-              {isLevelUp ? "[ SYSTEM: LEVELED UP ]" : "[ SYSTEM NOTICE ]"}
+              {isLevelUp ? "[ SYSTEM : LEVEL UP ]" : "[ SYSTEM ALARM ]"}
             </span>
           </div>
 
           {/* Content Body Module */}
-          <div className={cn("space-y-3", isLevelUp ? "py-2" : "py-0")}>
+          <div className={cn("space-y-4", isLevelUp ? "py-2" : "py-0")}>
             <p
               className={cn(
-                "font-mono leading-relaxed font-medium text-zinc-300",
-                isLevelUp ? "text-base tracking-wide text-white" : "text-xs"
+                "font-mono leading-relaxed font-medium",
+                isLevelUp
+                  ? "text-lg tracking-wider text-white drop-shadow-md"
+                  : "text-sm text-zinc-300"
               )}
             >
-              {isLevelUp ? `Congratulations. ${message}` : message}
+              {isLevelUp
+                ? `CONGRATULATIONS. ${message.toUpperCase()}`
+                : message}
             </p>
 
             {/* Incremental Stat Updates */}
             {stat && (
               <div
                 className={cn(
-                  "flex items-center justify-between border border-zinc-800/80 bg-zinc-900/60 px-3 py-1.5 font-mono font-bold tracking-wide text-white",
-                  isLevelUp ? "mx-auto max-w-xs text-sm" : "text-xs"
+                  "flex items-center justify-between border bg-zinc-900/80 px-4 py-2 font-mono font-bold tracking-widest text-white backdrop-blur-sm",
+                  isLevelUp
+                    ? "mx-auto max-w-xs border-white/30 text-sm shadow-[inset_0_0_10px_rgba(255,255,255,0.1)]"
+                    : "border-zinc-700/50 text-xs shadow-[inset_0_0_10px_rgba(255,255,255,0.05)]"
                 )}
               >
-                <span className="text-[10px] tracking-wider text-zinc-400 uppercase">
+                <span
+                  className={cn(
+                    "text-[10px] tracking-[0.2em] uppercase",
+                    isLevelUp ? "text-zinc-400" : "text-zinc-500"
+                  )}
+                >
                   {stat.label}
                 </span>
-                <span>[ +{stat.value} ]</span>
+                <span
+                  className={cn(
+                    isLevelUp
+                      ? "text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.8)]"
+                      : "text-zinc-300"
+                  )}
+                >
+                  [ +{stat.value} ]
+                </span>
               </div>
             )}
 
             {/* Main Level Crest */}
             {levelUp && (
-              <div className="mt-6 border-y border-zinc-800 bg-zinc-900/20 py-4 text-center">
-                <span className="block font-mono text-4xl font-black tracking-tight text-white">
-                  LV. {levelUp}
-                </span>
-                <span className="mt-1 block font-mono text-[9px] font-bold tracking-[0.35em] text-zinc-500 uppercase">
-                  Limits Broken // Potential Expanded
-                </span>
+              <div className="relative mt-8 py-6 text-center">
+                <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                  {/* Subtle background glow effect behind the level */}
+                  <div className="h-20 w-20 rounded-full bg-white blur-2xl" />
+                </div>
+                <div className="relative border-y border-white/30 bg-zinc-900/40 py-4 shadow-[inset_0_0_20px_rgba(255,255,255,0.1)]">
+                  <span className="block font-mono text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.6)]">
+                    LV. {levelUp}
+                  </span>
+                  <span className="mt-2 block font-mono text-[10px] font-bold tracking-[0.4em] text-zinc-400 uppercase">
+                    Limits Broken // Potential Expanded
+                  </span>
+                </div>
               </div>
             )}
           </div>

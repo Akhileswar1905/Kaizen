@@ -136,7 +136,7 @@ export default function KaizenTracker() {
                   variant="outline"
                   size="icon"
                   onClick={() => setIsStatusOpen(true)}
-                  className="h-10 w-10 shrink-0 rounded-full border-blue-500/30 text-blue-500 shadow-sm transition-all hover:border-blue-500/50 hover:bg-blue-500/10"
+                  className="border-white-500/30 h-10 w-10 shrink-0 rounded-full shadow-sm transition-all hover:bg-blue-500/10"
                 >
                   <UserCircle className="h-5 w-5" />
                 </Button>
