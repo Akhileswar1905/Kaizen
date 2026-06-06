@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
+  BicepsFlexed,
   Book,
   BookOpen,
   GraduationCap,
@@ -16,6 +17,7 @@ interface FloatingMenuProps {
   onOpenFinance: () => void
   onOpenSystemDesign: () => void
   onOpenNotes?: () => void
+  onOpenWorkoutTracker?: () => void
 }
 
 export function FloatingMenu({
@@ -24,6 +26,7 @@ export function FloatingMenu({
   onOpenFinance,
   onOpenSystemDesign,
   onOpenNotes,
+  onOpenWorkoutTracker,
 }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -140,6 +143,24 @@ export function FloatingMenu({
             }}
           >
             <StickyNote className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Option 6: Workout Tracker */}
+        <div className="group flex items-center gap-3">
+          <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
+            Workout Tracker
+          </span>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              onOpenWorkoutTracker?.()
+              setIsOpen(false)
+            }}
+          >
+            <BicepsFlexed className="h-5 w-5" />
           </Button>
         </div>
       </div>

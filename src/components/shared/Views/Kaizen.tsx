@@ -34,6 +34,7 @@ import { NotesTracker } from "../Notes"
 import { StatusWindow } from "../Widgets/StatusWindow"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
+import { WorkoutTracker } from "./WorkoutTracker"
 
 export default function KaizenTracker() {
   const [isStatusOpen, setIsStatusOpen] = useState(false)
@@ -123,7 +124,9 @@ export default function KaizenTracker() {
     if (activeView === "notes") {
       return <NotesTracker onBack={() => setActiveView("dashboard")} />
     }
-
+    if (activeView === "workout-tracker") {
+      return <WorkoutTracker onBack={() => setActiveView("dashboard")} />
+    }
     return (
       <div className="flex min-h-screen justify-center bg-background/50 px-4 py-8 font-sans text-foreground antialiased md:px-12 md:py-14">
         <div className="w-full max-w-4xl space-y-10">
@@ -633,6 +636,7 @@ export default function KaizenTracker() {
         onOpenFinance={() => setActiveView("finance")}
         onOpenSystemDesign={() => setActiveView("system-design")}
         onOpenNotes={() => setActiveView("notes")}
+        onOpenWorkoutTracker={() => setActiveView("workout-tracker")}
       />
     </div>
   )
