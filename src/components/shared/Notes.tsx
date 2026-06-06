@@ -468,7 +468,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                         placeholder="System Title (e.g., CAP Theorem, Event-Driven Architectures...)"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="h-auto rounded-none border-0 border-b border-border/30 bg-transparent px-0 py-2 text-2xl font-black tracking-tight transition-colors placeholder:text-muted-foreground/30 focus-visible:border-primary/50 focus-visible:ring-0 sm:text-3xl"
+                        className="h-auto rounded-none border-0 border-b border-border/30 bg-transparent px-1 py-2 text-2xl font-black tracking-tight transition-colors placeholder:text-muted-foreground/30 focus-visible:border-primary/50 focus-visible:ring-0 sm:p-2 sm:text-3xl"
                         required
                       />
                     </div>
@@ -480,7 +480,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                             placeholder="Structure your notes utilizing Markdown..."
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
-                            className="flex-1 resize-none border-0 bg-transparent px-0 py-2 font-serif text-base leading-relaxed text-foreground/90 placeholder:font-sans placeholder:text-muted-foreground/30 focus-visible:ring-0 md:text-lg"
+                            className="flex-1 resize-none border-0 bg-transparent px-0 py-2 font-serif text-base leading-relaxed text-foreground/90 placeholder:font-sans placeholder:text-muted-foreground/30 focus-visible:ring-0 sm:p-2 md:text-lg"
                             required
                           />
                           <div className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-br from-primary/2 via-transparent to-transparent opacity-0 blur-2xl transition-opacity duration-500 group-focus-within:opacity-100" />
