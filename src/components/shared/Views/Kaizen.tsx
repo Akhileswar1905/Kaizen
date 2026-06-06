@@ -14,6 +14,9 @@ import {
   Flame,
   Percent,
   CalendarDays,
+  Play,
+  Pause,
+  RotateCcw,
 } from "lucide-react"
 import { useTracker } from "@/hooks/useTracker"
 import { addDays, format } from "date-fns"
@@ -56,6 +59,14 @@ export default function KaizenTracker() {
     activeView,
     setActiveView,
     playerStats,
+    // POMODORO STATE DESTRUCTURED FROM HOOK
+    pomoTimeLeft,
+    isPomoActive,
+    isPomoBreak,
+    togglePomoTimer,
+    resetPomoTimer,
+    setPomoMode,
+    formatPomoTime,
   } = useTracker()
 
   const renderContent = () => {
@@ -190,6 +201,76 @@ export default function KaizenTracker() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          {/* Pomodoro Focus Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                Focus Session
+              </h2>
+              <span className="text-xs font-medium text-muted-foreground/60">
+                {isPomoActive ? "Running" : "Idle"}
+              </span>
+            </div>
+
+            <Card className="relative overflow-hidden border border-border/50 bg-card/60 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-border hover:shadow-md">
+              <CardContent className="flex flex-col items-center justify-center p-8 sm:p-10">
+                {/* Mode Selector */}
+                <div className="mb-6 flex gap-2 rounded-full border border-border/50 bg-muted/40 p-1 backdrop-blur-sm">
+                  <button
+                    onClick={() => setPomoMode("work")}
+                    className={cn(
+                      "rounded-full px-5 py-1.5 text-xs font-bold transition-all",
+                      !isPomoBreak
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Focus
+                  </button>
+                  <button
+                    onClick={() => setPomoMode("break")}
+                    className={cn(
+                      "rounded-full px-5 py-1.5 text-xs font-bold transition-all",
+                      isPomoBreak
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Break
+                  </button>
+                </div>
+
+                {/* Timer Display */}
+                <div className="mb-8 font-mono text-6xl font-black tracking-tighter text-foreground sm:text-8xl">
+                  {formatPomoTime(pomoTimeLeft)}
+                </div>
+
+                {/* Controls */}
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={togglePomoTimer}
+                    className="h-12 w-36 rounded-xl font-bold tracking-wide transition-all hover:opacity-90"
+                  >
+                    {isPomoActive ? (
+                      <Pause className="mr-2 h-4 w-4" />
+                    ) : (
+                      <Play className="mr-2 h-4 w-4" />
+                    )}
+                    {isPomoActive ? "Pause" : "Start"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={resetPomoTimer}
+                    className="h-12 w-12 rounded-xl border-border/50 bg-background/50 hover:bg-muted"
+                  >
+                    <RotateCcw className="h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Habits List */}

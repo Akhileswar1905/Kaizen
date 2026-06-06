@@ -1,6 +1,6 @@
 import { addDays, subDays } from "date-fns"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { startOfWeek, subWeeks, addWeeks, format } from "date-fns"
 import { supabase } from "@/lib/supabase"
 import * as Icons from "lucide-react"
@@ -438,6 +438,178 @@ export function useTracker() {
     }
   }, [userId])
 
+  // ==========================================
+  // POMODORO LOGIC (Cross-Browser Synced)
+  // ==========================================
+  const WORK_TIME = 25 * 60
+  const BREAK_TIME = 5 * 60
+
+  const [pomoTimeLeft, setPomoTimeLeft] = useState(WORK_TIME)
+  const [isPomoActive, setIsPomoActive] = useState(false)
+  const [isPomoBreak, setIsPomoBreak] = useState(false)
+
+  // Keep a ref of the latest state to sync with new tabs without triggering re-connects
+  const pomoStateRef = useRef({
+    isActive: isPomoActive,
+    timeLeft: pomoTimeLeft,
+    isBreak: isPomoBreak,
+  })
+
+  // Update the ref silently every time state changes
+  useEffect(() => {
+    pomoStateRef.current = {
+      isActive: isPomoActive,
+      timeLeft: pomoTimeLeft,
+      isBreak: isPomoBreak,
+    }
+  }, [isPomoActive, pomoTimeLeft, isPomoBreak])
+
+  // 1. Audio Notification
+  const playSystemAlarm = useCallback(() => {
+    try {
+      const AudioContext =
+        window.AudioContext || (window as any).webkitAudioContext
+      if (!AudioContext) return
+
+      const ctx = new AudioContext()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(600, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 1.5)
+
+      gain.gain.setValueAtTime(0.5, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 1.5)
+
+      osc.start()
+      osc.stop(ctx.currentTime + 1.5)
+    } catch (error) {
+      console.log("Audio play failed", error)
+    }
+  }, [])
+
+  // 2. Supabase Realtime Cross-Browser Sync
+  useEffect(() => {
+    if (!user?.id) return
+
+    const pomoChannel = supabase.channel(`pomo_sync_${user.id}`)
+
+    pomoChannel
+      .on("broadcast", { event: "SYNC_STATE" }, ({ payload }) => {
+        setIsPomoActive(payload.isActive)
+        setPomoTimeLeft(payload.timeLeft)
+        setIsPomoBreak(payload.isBreak)
+      })
+      .on("broadcast", { event: "REQUEST_STATE" }, () => {
+        // Use the REF here. This guarantees we send the freshest data
+        // without putting state in the dependency array.
+        const current = pomoStateRef.current
+        if (
+          current.isActive ||
+          current.timeLeft !== (current.isBreak ? BREAK_TIME : WORK_TIME)
+        ) {
+          pomoChannel.send({
+            type: "broadcast",
+            event: "SYNC_STATE",
+            payload: current,
+          })
+        }
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          pomoChannel.send({
+            type: "broadcast",
+            event: "REQUEST_STATE",
+          })
+        }
+      })
+
+    return () => {
+      // ONLY tear down the websocket when the user logs out or closes the app
+      supabase.removeChannel(pomoChannel)
+    }
+  }, [user?.id]) // DEPENDENCY ARRAY FIXED: Only depends on User ID now
+
+  // Helper to shout our state changes to other browsers
+  const broadcastState = useCallback(
+    (active: boolean, time: number, breakMode: boolean) => {
+      if (!user) return
+      supabase.channel(`pomo_sync_${user.id}`).send({
+        type: "broadcast",
+        event: "SYNC_STATE",
+        payload: { isActive: active, timeLeft: time, isBreak: breakMode },
+      })
+    },
+    [user]
+  )
+
+  // 3. Timer Engine (Optimized)
+  useEffect(() => {
+    let interval: any
+
+    // We only create the interval if it's active AND time is greater than 0.
+    if (isPomoActive && pomoTimeLeft > 0) {
+      interval = setInterval(() => {
+        setPomoTimeLeft((prev) => prev - 1)
+      }, 1000)
+    }
+
+    return () => clearInterval(interval)
+    // The trick here is using `pomoTimeLeft > 0` as a boolean dependency.
+    // It prevents the interval from restarting every single second!
+  }, [isPomoActive, pomoTimeLeft > 0])
+
+  // 4. Handle Time Completion
+  useEffect(() => {
+    if (pomoTimeLeft === 0 && isPomoActive) {
+      setIsPomoActive(false)
+      playSystemAlarm()
+
+      // Auto-switch modes when time is up
+      const nextIsBreak = !isPomoBreak
+      const nextTime = nextIsBreak ? BREAK_TIME : WORK_TIME
+
+      setIsPomoBreak(nextIsBreak)
+      setPomoTimeLeft(nextTime)
+      broadcastState(false, nextTime, nextIsBreak)
+    }
+  }, [pomoTimeLeft, isPomoActive, isPomoBreak, playSystemAlarm, broadcastState])
+
+  // 5. Action Controls
+  const togglePomoTimer = () => {
+    const newState = !isPomoActive
+    setIsPomoActive(newState)
+    broadcastState(newState, pomoTimeLeft, isPomoBreak)
+  }
+
+  const resetPomoTimer = () => {
+    const time = isPomoBreak ? BREAK_TIME : WORK_TIME
+    setIsPomoActive(false)
+    setPomoTimeLeft(time)
+    broadcastState(false, time, isPomoBreak)
+  }
+
+  const setPomoMode = (mode: "work" | "break") => {
+    const isBreak = mode === "break"
+    const time = isBreak ? BREAK_TIME : WORK_TIME
+    setIsPomoActive(false)
+    setIsPomoBreak(isBreak)
+    setPomoTimeLeft(time)
+    broadcastState(false, time, isBreak)
+  }
+
+  const formatPomoTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0")
+    const s = (seconds % 60).toString().padStart(2, "0")
+    return `${m}:${s}`
+  }
+
   useEffect(() => {
     fetchWeekData()
     fetchDsaProgress()
@@ -482,5 +654,13 @@ export function useTracker() {
     triggerGamificationEvent,
     subtractGamificationPoints,
     recalculateAndSyncStats,
+
+    pomoTimeLeft,
+    isPomoActive,
+    isPomoBreak,
+    togglePomoTimer,
+    resetPomoTimer,
+    setPomoMode,
+    formatPomoTime,
   }
 }
