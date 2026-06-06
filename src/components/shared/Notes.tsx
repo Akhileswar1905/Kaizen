@@ -383,7 +383,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
 
         {/* RIGHT COLUMN: Interactive Study Workspace Engine */}
         <div className="md:col-span-8">
-          <Card className="flex min-h-150 flex-col overflow-hidden rounded-3xl border border-border/40 bg-card/40 shadow-lg backdrop-blur-xl transition-all duration-500 focus-within:border-primary/30 focus-within:shadow-xl focus-within:shadow-primary/5">
+          <Card className="flex min-h-200 flex-col overflow-hidden rounded-3xl border border-border/40 bg-card/40 shadow-lg backdrop-blur-xl transition-all duration-500 focus-within:border-primary/30 focus-within:shadow-xl focus-within:shadow-primary/5">
             {/* Control Bar */}
             <div className="flex items-center justify-between border-b border-border/30 bg-muted/20 px-5 py-4 sm:px-6">
               <div className="flex items-center gap-3">
@@ -480,7 +480,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                             placeholder="Structure your notes utilizing Markdown..."
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
-                            className="flex-1 resize-none border-0 bg-transparent px-0 py-2 font-serif text-base leading-relaxed text-foreground/90 placeholder:font-sans placeholder:text-muted-foreground/30 focus-visible:ring-0 sm:p-2 md:text-lg"
+                            className="flex-1 resize-none border-0 bg-transparent px-1 py-2 font-serif text-base leading-relaxed text-foreground/90 placeholder:font-sans placeholder:text-muted-foreground/30 focus-visible:ring-0 sm:p-2"
                             required
                           />
                           <div className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-br from-primary/2 via-transparent to-transparent opacity-0 blur-2xl transition-opacity duration-500 group-focus-within:opacity-100" />
