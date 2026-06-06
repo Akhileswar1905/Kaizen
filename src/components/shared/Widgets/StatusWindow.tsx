@@ -7,6 +7,7 @@ import {
   Coins,
   Trophy,
   Flame,
+  Activity,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -23,101 +24,150 @@ export function StatusWindow({ stats, isOpen, onClose }: StatusWindowProps) {
 
   if (!stats) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm">
-        <div className="animate-pulse font-mono text-primary">
-          Loading System Data...
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
+        <div className="animate-pulse font-mono text-xs tracking-[0.3em] text-white uppercase">
+          [ ACCESSING SYSTEM CODES... ]
         </div>
       </div>
     )
   }
 
   const statsConfig = [
-    { label: "STR", value: stats.strength, icon: Shield },
-    { label: "INT", value: stats.intelligence, icon: Brain },
-    { label: "VIT", value: stats.vitality, icon: Heart },
-    { label: "WIL", value: stats.willpower, icon: Zap },
-    { label: "LCK", value: stats.luck, icon: Coins },
+    {
+      label: "STR",
+      fullLabel: "Strength",
+      value: stats.strength,
+      icon: Shield,
+    },
+    {
+      label: "INT",
+      fullLabel: "Intelligence",
+      value: stats.intelligence,
+      icon: Brain,
+    },
+    { label: "VIT", fullLabel: "Vitality", value: stats.vitality, icon: Heart },
+    { label: "WIL", fullLabel: "Willpower", value: stats.willpower, icon: Zap },
+    { label: "LCK", fullLabel: "Luck", value: stats.luck, icon: Coins },
   ]
 
-  return (
-    <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-background/80 p-4 backdrop-blur-md duration-300 fade-in">
-      <Card className="relative w-full max-w-md overflow-hidden border-border bg-card text-foreground shadow-xl">
-        {/* Header / Decorative Border */}
-        <div className="absolute top-0 left-0 h-1 w-full bg-primary" />
+  const xpMax = getXpForNextLevel(stats.level)
+  const xpPercentage = (stats.xp / xpMax) * 100
 
-        <CardContent className="p-6">
-          {/* Close Button */}
+  return (
+    <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/75 p-4 backdrop-blur-sm duration-200 fade-in">
+      <Card className="relative w-full max-w-md overflow-hidden rounded-none border border-zinc-800 bg-zinc-950/95 text-zinc-100 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+        {/* Solo Leveling Corner UI Framing Brackets */}
+        <div className="pointer-events-none absolute top-3 left-3 h-3 w-3 border-t border-l border-zinc-700" />
+        <div className="pointer-events-none absolute top-3 right-3 h-3 w-3 border-t border-r border-zinc-700" />
+        <div className="pointer-events-none absolute bottom-3 left-3 h-3 w-3 border-b border-l border-zinc-700" />
+        <div className="pointer-events-none absolute right-3 bottom-3 h-3 w-3 border-r border-b border-zinc-700" />
+
+        {/* Core System Bar Indicator */}
+        <div className="absolute top-0 left-0 h-[2px] w-full bg-white opacity-80" />
+
+        <CardContent className="space-y-6 p-6 sm:p-8">
+          {/* System Kill Switch (Close) */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-muted-foreground transition-colors hover:text-foreground"
+            className="absolute top-5 right-5 text-zinc-500 transition-colors hover:text-white focus:outline-none"
+            aria-label="Close Status Window"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4 stroke-[2.5]" />
           </button>
 
-          {/* Player Profile Section */}
-          <div className="mb-8 text-center">
-            <div className="mb-4 inline-flex items-center justify-center rounded-full bg-secondary p-3 text-secondary-foreground">
-              <Trophy className="h-8 w-8" />
-            </div>
-            <h2 className="mb-1 text-xs font-bold tracking-[0.2em] text-muted-foreground uppercase">
-              Player Status
-            </h2>
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-3xl font-black tracking-tighter text-foreground">
-                LEVEL {stats.level}
-              </span>
-              <span className="rounded bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground uppercase">
-                Rank {stats.rank}
+          {/* Profile Identity HUD Header */}
+          <div className="border-b border-zinc-900 pb-5">
+            <div className="mb-1.5 flex items-center gap-2">
+              <Trophy className="h-3.5 w-3.5 text-zinc-400" />
+              <span className="font-mono text-[10px] font-black tracking-[0.3em] text-zinc-500 uppercase">
+                [ PLAYER STATUS STATUS ]
               </span>
             </div>
-            <div className="mt-2 flex items-center justify-center gap-1.5 text-muted-foreground">
-              <Flame className="h-3.5 w-3.5 text-orange-500" />
-              <span className="font-mono text-[10px] font-bold tracking-widest uppercase">
-                Streak: {stats.current_streak} days
-              </span>
-            </div>
-          </div>
 
-          {/* XP Bar */}
-          <div className="mb-8 space-y-2">
-            <div className="flex justify-between font-mono text-[10px] tracking-wider text-muted-foreground uppercase">
-              <span>Experience (XP)</span>
-              <span>
-                {stats.xp} / {getXpForNextLevel(stats.level)}
-              </span>
+            <div className="flex items-baseline justify-between">
+              <h2 className="font-mono text-3xl font-black tracking-tighter text-white">
+                LV. {stats.level}
+              </h2>
+              <div className="border border-white/20 bg-white/5 px-2.5 py-0.5 font-mono text-[10px] font-black tracking-widest text-white uppercase">
+                {stats.rank}-RANK
+              </div>
             </div>
-            <Progress
-              value={(stats.xp / getXpForNextLevel(stats.level)) * 100}
-              className="h-1.5 bg-secondary"
-            />
-          </div>
 
-          {/* Stats Grid */}
-          <div className="grid gap-3">
-            {statsConfig.map(({ label, value, icon: Icon }) => (
-              <div
-                key={label}
-                className="group flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3 transition-all hover:bg-muted/50"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="rounded border border-border bg-background p-2 transition-colors group-hover:border-primary/50">
-                    <Icon className="h-4 w-4 text-foreground" />
-                  </div>
-                  <span className="font-mono text-sm font-bold tracking-wider text-foreground">
-                    {label}
+            {/* Daily Sequence Engine Status */}
+            <div className="mt-3 flex items-center gap-4 font-mono text-xs">
+              <div className="flex items-center gap-1.5 text-zinc-400">
+                <Flame className="h-3.5 w-3.5 animate-pulse text-white" />
+                <span>
+                  Streak:{" "}
+                  <span className="font-bold text-white">
+                    {stats.current_streak}D
                   </span>
-                </div>
-                <span className="font-mono text-lg font-black text-foreground">
-                  {value}
                 </span>
               </div>
-            ))}
+              <div className="flex items-center gap-1.5 text-zinc-400">
+                <Activity className="h-3.5 w-3.5 text-zinc-500" />
+                <span>
+                  Condition:{" "}
+                  <span className="font-bold text-white">OPTIMAL</span>
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Footer */}
-          <div className="mt-8 border-t border-border pt-4 text-center">
-            <p className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
-              System: Maintain consistency to evolve.
+          {/* Combat Experience Progress Module */}
+          <div className="space-y-2">
+            <div className="flex justify-between font-mono text-[10px] tracking-wider text-zinc-400 uppercase">
+              <span className="font-bold">Progression Metric (XP)</span>
+              <span className="font-semibold text-zinc-300">
+                {stats.xp} / {xpMax}
+              </span>
+            </div>
+            <div className="relative h-1.5 w-full border border-zinc-800 bg-zinc-900 p-[1px]">
+              <Progress
+                value={xpPercentage}
+                className="h-full rounded-none bg-transparent transition-all duration-500 [&>div]:bg-white"
+              />
+            </div>
+          </div>
+
+          {/* Dynamic Core Attributes Matrix */}
+          <div className="space-y-2.5">
+            <span className="mb-1 block font-mono text-[10px] font-black tracking-[0.2em] text-zinc-500 uppercase">
+              Ability Attributes
+            </span>
+
+            <div className="grid gap-2">
+              {statsConfig.map(({ label, fullLabel, value, icon: Icon }) => (
+                <div
+                  key={label}
+                  className="group flex items-center justify-between border border-zinc-900 bg-zinc-900/30 p-2.5 transition-all hover:border-zinc-800 hover:bg-zinc-900/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="border border-zinc-800 bg-zinc-950 p-1.5 text-zinc-400 transition-colors group-hover:border-zinc-600 group-hover:text-white">
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-mono text-xs font-black tracking-wider text-white">
+                        {label}
+                      </span>
+                      <span className="font-mono text-[9px] tracking-tight text-zinc-500 uppercase">
+                        {fullLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  <span className="px-2 font-mono text-base font-black text-white">
+                    [ {value} ]
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Core System Directive Block Footer */}
+          <div className="border-t border-zinc-900 pt-4 text-center">
+            <p className="font-mono text-[9px] font-medium tracking-[0.25em] text-zinc-500 uppercase">
+              Warning: Stagnation triggers baseline fatigue. Evolve daily.
             </p>
           </div>
         </CardContent>

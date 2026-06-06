@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
@@ -20,11 +20,15 @@ import {
   Edit3,
   Sparkles,
   CheckCircle2,
+  Clock,
+  SaveAll,
 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { useGamification } from "@/contexts/GamificationContext"
 
 const TAGS = ["General", "Work", "Ideas", "Personal", "Study"]
+const DRAFT_KEY = "study_studio_local_draft"
 
 interface NotesTrackerProps {
   onBack: () => void
@@ -32,6 +36,8 @@ interface NotesTrackerProps {
 
 export function NotesTracker({ onBack }: NotesTrackerProps) {
   const { user } = useAuth()
+  const { triggerGamificationEvent, subtractGamificationPoints } =
+    useGamification()
   const [notes, setNotes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -50,9 +56,59 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeFilterTag, setActiveFilterTag] = useState("All")
 
+  // Draft State
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null)
+  const [hasAvailableDraft, setHasAvailableDraft] = useState(false)
+
   useEffect(() => {
     if (user) fetchNotes()
+    checkExistingDraft()
   }, [user])
+
+  // Auto-Save Draft Logic
+  useEffect(() => {
+    if (workspaceMode === "edit" && (title.trim() || content.trim())) {
+      const timer = setTimeout(() => {
+        const draftData = {
+          title,
+          content,
+          tag: selectedTag,
+          noteId: selectedNote?.id || null,
+          timestamp: new Date().toISOString(),
+        }
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData))
+        setDraftSavedAt(new Date())
+      }, 1500) // Auto-save after 1.5s of inactivity
+      return () => clearTimeout(timer)
+    }
+  }, [title, content, selectedTag, workspaceMode, selectedNote])
+
+  const checkExistingDraft = () => {
+    const savedDraft = localStorage.getItem(DRAFT_KEY)
+    if (savedDraft) {
+      setHasAvailableDraft(true)
+    }
+  }
+
+  const loadDraft = useCallback(() => {
+    const savedDraftStr = localStorage.getItem(DRAFT_KEY)
+    if (savedDraftStr) {
+      const draft = JSON.parse(savedDraftStr)
+      setTitle(draft.title)
+      setContent(draft.content)
+      setSelectedTag(draft.tag)
+      setIsEditing(true)
+      setWorkspaceMode("edit")
+      setSelectedNote(notes.find((n) => n.id === draft.noteId) || null)
+      setHasAvailableDraft(false)
+    }
+  }, [notes])
+
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY)
+    setDraftSavedAt(null)
+    setHasAvailableDraft(false)
+  }
 
   const fetchNotes = async (selectId?: string) => {
     const { data, error } = await supabase
@@ -62,13 +118,12 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
 
     if (!error && data) {
       setNotes(data)
-      // Automatically focus the first note or retain existing selection
-      if (data.length > 0) {
+      if (data.length > 0 && !hasAvailableDraft) {
         const nextSelected = selectId
           ? data.find((n) => n.id === selectId)
           : data[0]
         handleSelectNote(nextSelected || data[0])
-      } else {
+      } else if (!hasAvailableDraft) {
         handleInitNewNote()
       }
     }
@@ -81,7 +136,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     setTitle(note.title)
     setContent(note.content)
     setSelectedTag(note.tag)
-    setWorkspaceMode("preview") // Default to reading mode for fast retention
+    setWorkspaceMode("preview")
   }
 
   const handleInitNewNote = () => {
@@ -106,7 +161,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     }
 
     if (selectedNote?.id) {
-      // Update existing record
       const { data, error } = await supabase
         .from("notes")
         .update(payload)
@@ -117,11 +171,9 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
       if (!error && data) {
         setNotes(notes.map((n) => (n.id === data.id ? data : n)))
         setSelectedNote(data)
-        setIsEditing(false)
-        setWorkspaceMode("preview")
+        await triggerGamificationEvent({ type: "NOTE_SAVED", amount: 1 })
       }
     } else {
-      // Create new record
       const { data, error } = await supabase
         .from("notes")
         .insert(payload)
@@ -131,15 +183,19 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
       if (!error && data) {
         setNotes([data, ...notes])
         setSelectedNote(data)
-        setIsEditing(false)
-        setWorkspaceMode("preview")
+        await triggerGamificationEvent({ type: "NOTE_SAVED", amount: 1 })
       }
     }
+
+    // Clear draft upon successful save
+    clearDraft()
+    setIsEditing(false)
+    setWorkspaceMode("preview")
     setIsSubmitting(false)
   }
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent resetting active panel focus
+    e.stopPropagation()
     const remainingNotes = notes.filter((n) => n.id !== id)
     setNotes(remainingNotes)
 
@@ -151,6 +207,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
       }
     }
     await supabase.from("notes").delete().match({ id })
+    await subtractGamificationPoints({ type: "NOTE_SAVED", amount: 1 })
   }
 
   const filteredNotes = useMemo(() => {
@@ -177,63 +234,80 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
   }
 
   return (
-    <div className="animate-fade-in mx-auto max-w-6xl space-y-6 p-4 text-foreground selection:bg-primary/10 sm:p-6">
+    <div className="mx-auto max-w-6xl animate-in space-y-6 p-4 text-foreground duration-500 fade-in slide-in-from-bottom-4 selection:bg-primary/20 sm:p-6 md:p-8">
       {/* Premium Dashboard Navigation */}
-      <header className="flex flex-col gap-4 border-b border-border/40 pb-5 sm:flex-row sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Button
             variant="outline"
             size="icon"
             onClick={onBack}
-            className="h-9 w-9 shrink-0 rounded-xl border-border/50 bg-background/50 shadow-sm backdrop-blur-sm transition-all hover:bg-muted/50 active:scale-95"
+            className="h-10 w-10 shrink-0 rounded-full border-border/50 bg-card/50 shadow-sm backdrop-blur-sm transition-all hover:scale-105 hover:bg-muted active:scale-95"
           >
-            <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h1 className="flex items-center gap-2 text-lg font-bold tracking-tight sm:text-xl">
-              <BookOpen className="h-4 w-4 text-primary" />
-              Personal Study Studio
+          <div className="space-y-0.5">
+            <h1 className="flex items-center gap-2.5 text-xl font-extrabold tracking-tight sm:text-2xl">
+              <div className="rounded-xl bg-primary/10 p-1.5 text-primary">
+                <BookOpen className="h-5 w-5" />
+              </div>
+              <span className="bg-linear-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                Study Studio
+              </span>
             </h1>
-            <p className="text-xs font-medium text-muted-foreground">
+            <p className="text-xs font-medium text-muted-foreground/80 sm:text-sm">
               Document frameworks, conceptual models, and system foundations.
             </p>
           </div>
         </div>
-        <Button
-          onClick={handleInitNewNote}
-          size="sm"
-          className="gap-1.5 self-start rounded-xl font-semibold shadow-sm sm:self-center"
-        >
-          <Plus className="h-4 w-4 stroke-[2.5]" />
-          Compile Entry
-        </Button>
+        <div className="flex gap-3 self-start sm:self-center">
+          {hasAvailableDraft && !isEditing && (
+            <Button
+              onClick={loadDraft}
+              variant="outline"
+              size="sm"
+              className="gap-2 rounded-xl border-amber-500/30 bg-amber-500/5 font-semibold text-amber-600 shadow-sm hover:bg-amber-500/10 dark:text-amber-400"
+            >
+              <SaveAll className="h-4 w-4" />
+              Restore Draft
+            </Button>
+          )}
+          <Button
+            onClick={handleInitNewNote}
+            size="sm"
+            className="gap-2 rounded-xl px-5 font-bold shadow-sm shadow-primary/20 transition-all hover:shadow-md active:scale-95"
+          >
+            <Plus className="h-4 w-4 stroke-[2.5]" />
+            Compile Entry
+          </Button>
+        </div>
       </header>
 
       {/* Primary Workspace Architecture */}
-      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-12">
-        {/* LEFT COLUMN: Ledger Navigation & Search Deck (4 Cols) */}
-        <div className="space-y-4 md:col-span-4">
-          <div className="flex flex-col gap-2.5 rounded-2xl border border-border/40 bg-card/40 p-3 shadow-sm backdrop-blur-md">
-            <div className="relative">
-              <Search className="absolute top-2.5 left-3 h-3.5 w-3.5 text-muted-foreground/50" />
+      <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-12">
+        {/* LEFT COLUMN: Ledger Navigation & Search Deck */}
+        <div className="space-y-5 md:col-span-4">
+          <div className="flex flex-col gap-3 rounded-2xl border border-border/40 bg-card/40 p-4 shadow-sm backdrop-blur-md">
+            <div className="group relative">
+              <Search className="absolute top-3 left-3.5 h-4 w-4 text-muted-foreground/50 transition-colors group-focus-within:text-primary" />
               <Input
                 placeholder="Search ledger indexing..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9 rounded-xl border-border/30 bg-background/50 pl-9 text-xs placeholder:text-muted-foreground/40 focus-visible:ring-1 focus-visible:ring-primary/30"
+                className="h-10 rounded-xl border-border/40 bg-background/50 pl-10 text-sm placeholder:text-muted-foreground/40 focus-visible:ring-1 focus-visible:ring-primary/40"
               />
             </div>
 
-            <div className="no-scrollbar flex items-center gap-1 overflow-x-auto">
+            <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
               {["All", ...TAGS].map((tag) => (
                 <button
                   key={tag}
                   onClick={() => setActiveFilterTag(tag)}
                   className={cn(
-                    "shrink-0 rounded-lg border px-2.5 py-1 text-[11px] font-semibold tracking-tight transition-all",
+                    "shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all",
                     activeFilterTag === tag
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border/30 bg-background/40 text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border/40 bg-background/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                   )}
                 >
                   {tag}
@@ -243,57 +317,61 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
           </div>
 
           {/* Chronological List Ledger */}
-          <div className="no-scrollbar max-h-125 space-y-2 overflow-y-auto pr-1">
+          <div className="no-scrollbar max-h-[calc(100vh-300px)] space-y-3 overflow-y-auto pr-2">
             {filteredNotes.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/30 bg-card/10 py-12 text-center">
-                <Inbox className="h-5 w-5 text-muted-foreground/30" />
-                <p className="text-[11px] font-medium text-muted-foreground/60">
+              <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border/40 bg-card/20 py-16 text-center">
+                <div className="rounded-full bg-muted/50 p-3">
+                  <Inbox className="h-6 w-6 text-muted-foreground/50" />
+                </div>
+                <p className="text-xs font-medium text-muted-foreground/70">
                   No documents index verified
                 </p>
               </div>
             ) : (
               filteredNotes.map((note) => {
-                const isCurrent = selectedNote?.id === note.id
+                const isCurrent = selectedNote?.id === note.id && !isEditing
                 return (
                   <div
                     key={note.id}
                     onClick={() => handleSelectNote(note)}
                     className={cn(
-                      "group relative cursor-pointer rounded-xl border p-3.5 transition-all duration-200 select-none",
+                      "group relative cursor-pointer rounded-2xl border p-4 transition-all duration-300 select-none",
                       isCurrent
-                        ? "border-primary/50 bg-card shadow-sm ring-1 ring-primary/10"
-                        : "border-border/30 bg-card/40 hover:border-border/80 hover:bg-card/70"
+                        ? "border-primary/40 bg-primary/5 shadow-sm ring-1 ring-primary/20"
+                        : "border-border/40 bg-card/30 backdrop-blur-sm hover:border-border/80 hover:bg-card/80"
                     )}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 space-y-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1 space-y-1.5">
                         <h4
                           className={cn(
-                            "truncate text-xs font-bold tracking-tight",
-                            isCurrent ? "text-primary" : "text-foreground"
+                            "truncate text-sm font-bold tracking-tight transition-colors",
+                            isCurrent
+                              ? "text-primary"
+                              : "text-foreground group-hover:text-primary/90"
                           )}
                         >
                           {note.title || "Untitled Fragment"}
                         </h4>
-                        <p className="line-clamp-2 text-[10px] leading-relaxed text-muted-foreground/70">
+                        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground/70">
                           {note.content.replace(/[#*`\-]/g, "")}
                         </p>
                       </div>
-                      <span className="shrink-0 rounded bg-muted/60 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-muted-foreground uppercase">
+                      <span className="shrink-0 rounded-md border border-border/50 bg-muted/80 px-2 py-1 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
                         {note.tag}
                       </span>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between border-t border-border/10 pt-2 font-mono text-[9px] text-muted-foreground/40">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
+                    <div className="mt-4 flex items-center justify-between border-t border-border/20 pt-3 font-mono text-[10px] text-muted-foreground/60">
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <Calendar className="h-3.5 w-3.5" />
                         {format(new Date(note.created_at), "MMM dd, yyyy")}
                       </div>
                       <button
                         onClick={(e) => handleDelete(note.id, e)}
-                        className="rounded p-0.5 text-destructive/60 opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                        className="rounded-md p-1.5 text-destructive/60 opacity-0 transition-all group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -303,49 +381,59 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Interactive Study Workspace Engine (8 Cols) */}
+        {/* RIGHT COLUMN: Interactive Study Workspace Engine */}
         <div className="md:col-span-8">
-          <Card className="flex min-h-145 flex-col overflow-hidden rounded-2xl border border-border/40 bg-card/50 shadow-md backdrop-blur-md">
+          <Card className="flex min-h-150 flex-col overflow-hidden rounded-3xl border border-border/40 bg-card/40 shadow-lg backdrop-blur-xl transition-all duration-500 focus-within:border-primary/30 focus-within:shadow-xl focus-within:shadow-primary/5">
             {/* Control Bar */}
-            <div className="flex items-center justify-between border-b border-border/30 bg-muted/20 px-4 py-3 sm:px-5">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between border-b border-border/30 bg-muted/20 px-5 py-4 sm:px-6">
+              <div className="flex items-center gap-3">
                 <div
                   className={cn(
-                    "h-2 w-2 rounded-full",
-                    isEditing ? "animate-pulse bg-amber-500" : "bg-emerald-500"
+                    "h-2.5 w-2.5 rounded-full shadow-inner",
+                    isEditing
+                      ? "animate-pulse bg-amber-500 shadow-amber-500/50"
+                      : "bg-emerald-500 shadow-emerald-500/50"
                   )}
                 />
-                <span className="font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                <span className="font-mono text-xs font-bold tracking-wider text-muted-foreground uppercase">
                   {isEditing ? "Compilation Mode" : "Knowledge Base Viewer"}
                 </span>
+
+                {/* Draft Auto-Save Indicator */}
+                {isEditing && draftSavedAt && (
+                  <span className="ml-2 hidden animate-in items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[10px] font-medium text-muted-foreground fade-in sm:flex">
+                    <Clock className="h-3 w-3" />
+                    Draft saved {format(draftSavedAt, "HH:mm")}
+                  </span>
+                )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 {!isEditing && selectedNote && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setIsEditing(true)}
-                    className="h-8 gap-1 rounded-lg border-border/60 px-2.5 text-xs font-semibold"
+                    className="h-9 gap-2 rounded-xl border-border/60 px-4 text-xs font-bold hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
                   >
-                    <Edit3 className="h-3 w-3" />
+                    <Edit3 className="h-4 w-4" />
                     Modify Asset
                   </Button>
                 )}
 
                 {isEditing && (
-                  <div className="flex items-center gap-1 rounded-xl border border-border/30 bg-background/50 p-0.5">
+                  <div className="flex items-center gap-1 rounded-xl border border-border/40 bg-background/60 p-1 shadow-sm backdrop-blur-md">
                     <button
                       type="button"
                       onClick={() => setWorkspaceMode("edit")}
                       className={cn(
-                        "flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
+                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all",
                         workspaceMode === "edit"
-                          ? "bg-card text-foreground shadow-xs"
+                          ? "bg-card text-foreground shadow-sm ring-1 ring-border/50"
                           : "text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      <PenTool className="h-3 w-3" />
+                      <PenTool className="h-3.5 w-3.5" />
                       Write
                     </button>
                     <button
@@ -353,13 +441,13 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                       disabled={!content.trim()}
                       onClick={() => setWorkspaceMode("preview")}
                       className={cn(
-                        "flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all disabled:opacity-30",
+                        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all disabled:opacity-30",
                         workspaceMode === "preview"
-                          ? "bg-card text-foreground shadow-xs"
+                          ? "bg-card text-foreground shadow-sm ring-1 ring-border/50"
                           : "text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      <Eye className="h-3 w-3" />
+                      <Eye className="h-3.5 w-3.5" />
                       Preview
                     </button>
                   </div>
@@ -368,60 +456,59 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
             </div>
 
             {/* Workspace Content Core */}
-            <div className="flex flex-1 flex-col p-4 sm:p-6">
+            <div className="relative flex flex-1 flex-col">
               {isEditing ? (
                 <form
                   onSubmit={handleSaveNote}
-                  className="flex flex-1 flex-col space-y-4"
+                  className="z-10 flex flex-1 flex-col p-5 sm:p-8"
                 >
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold tracking-widest text-muted-foreground uppercase">
-                      System Title
-                    </label>
-                    <Input
-                      placeholder="e.g., CAP Theorem, Event-Driven Architectures..."
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="h-10 rounded-xl border-border/30 bg-background/30 font-semibold focus-visible:ring-1 focus-visible:ring-primary/20"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex min-h-75 flex-1 flex-col space-y-1">
-                    <label className="text-[9px] font-bold tracking-widest text-muted-foreground uppercase">
-                      Technical Architecture Markdown Docs
-                    </label>
-                    {workspaceMode === "edit" ? (
-                      <Textarea
-                        placeholder="Structure your notes utilizing structured Markdown templates..."
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        className="flex-1 resize-none rounded-xl border-border/30 bg-background/30 p-4 font-mono text-xs leading-relaxed shadow-inner focus-visible:ring-1 focus-visible:ring-primary/20"
+                  <div className="flex flex-1 flex-col space-y-6">
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="System Title (e.g., CAP Theorem, Event-Driven Architectures...)"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="h-auto rounded-none border-0 border-b border-border/30 bg-transparent px-0 py-2 text-2xl font-black tracking-tight transition-colors placeholder:text-muted-foreground/30 focus-visible:border-primary/50 focus-visible:ring-0 sm:text-3xl"
                         required
                       />
-                    ) : (
-                      <div className="markdown-preview flex-1 overflow-y-auto rounded-xl border border-border/20 bg-background/20 p-5 text-sm leading-relaxed wrap-break-word shadow-inner">
-                        <ReactMarkdown>{content}</ReactMarkdown>
-                      </div>
-                    )}
+                    </div>
+
+                    <div className="group relative flex flex-1 flex-col">
+                      {workspaceMode === "edit" ? (
+                        <>
+                          <Textarea
+                            placeholder="Structure your notes utilizing Markdown..."
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            className="flex-1 resize-none border-0 bg-transparent px-0 py-2 font-serif text-base leading-relaxed text-foreground/90 placeholder:font-sans placeholder:text-muted-foreground/30 focus-visible:ring-0 md:text-lg"
+                            required
+                          />
+                          <div className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-br from-primary/2 via-transparent to-transparent opacity-0 blur-2xl transition-opacity duration-500 group-focus-within:opacity-100" />
+                        </>
+                      ) : (
+                        <div className="markdown-preview flex-1 overflow-y-auto px-2 text-base leading-relaxed wrap-break-word">
+                          <ReactMarkdown>{content}</ReactMarkdown>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="mt-auto flex flex-col gap-3 border-t border-border/20 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-1.5">
-                      <span className="block text-[9px] font-bold tracking-widest text-muted-foreground uppercase">
-                        Vault Cataloging Anchor Tag
+                  <div className="mt-8 flex flex-col gap-4 border-t border-border/30 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-2">
+                      <span className="block text-[10px] font-extrabold tracking-widest text-muted-foreground uppercase">
+                        Vault Cataloging Tag
                       </span>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-2">
                         {TAGS.map((tag) => (
                           <button
                             type="button"
                             key={tag}
                             onClick={() => setSelectedTag(tag)}
                             className={cn(
-                              "rounded-lg border px-2.5 py-1 text-xs font-semibold transition-all",
+                              "rounded-lg border px-3 py-1.5 text-xs font-bold transition-all",
                               selectedTag === tag
-                                ? "border-foreground/80 bg-foreground/5 font-bold text-foreground"
-                                : "border-border/30 bg-background/40 text-muted-foreground hover:border-border/60"
+                                ? "border-primary bg-primary/10 text-primary shadow-sm"
+                                : "border-border/40 bg-background/50 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                             )}
                           >
                             {tag}
@@ -430,29 +517,30 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end">
+                    <div className="flex items-center gap-3 self-end">
                       {selectedNote && (
                         <Button
                           type="button"
                           variant="ghost"
-                          size="sm"
-                          onClick={() => handleSelectNote(selectedNote)}
-                          className="h-9 rounded-xl text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            clearDraft()
+                            handleSelectNote(selectedNote)
+                          }}
+                          className="h-10 rounded-xl px-5 text-sm font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                         >
-                          Cancel
+                          Discard
                         </Button>
                       )}
                       <Button
                         disabled={isSubmitting}
                         type="submit"
-                        size="sm"
-                        className="h-9 gap-1.5 rounded-xl font-semibold shadow-sm"
+                        className="h-10 gap-2 rounded-xl px-6 font-bold shadow-md shadow-primary/20 transition-all hover:shadow-lg active:scale-95"
                       >
                         {isSubmitting ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <>
-                            <CheckCircle2 className="h-3.5 w-3.5 stroke-[2.5]" />
+                            <CheckCircle2 className="h-4 w-4 stroke-[2.5]" />
                             <span>Commit Asset</span>
                           </>
                         )}
@@ -462,16 +550,16 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                 </form>
               ) : (
                 /* PREVIEW/STUDY VIEW MODE */
-                <div className="flex flex-1 flex-col space-y-5 select-text">
+                <div className="flex flex-1 flex-col space-y-6 p-6 select-text sm:p-10">
                   {selectedNote ? (
                     <>
-                      <div className="space-y-1.5 border-b border-border/20 pb-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 text-[9px] font-bold tracking-wide text-primary uppercase">
+                      <div className="space-y-4 border-b border-border/30 pb-6">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1 text-[10px] font-black tracking-widest text-primary uppercase shadow-sm">
                             {selectedNote.tag}
                           </span>
-                          <div className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground/50">
-                            <Calendar className="h-3 w-3" />
+                          <div className="flex items-center gap-1.5 font-mono text-xs font-medium text-muted-foreground/60">
+                            <Calendar className="h-3.5 w-3.5" />
                             Compiled{" "}
                             {format(
                               new Date(selectedNote.created_at),
@@ -479,30 +567,37 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                             )}
                           </div>
                         </div>
-                        <h2 className="text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+                        <h2 className="text-2xl leading-tight font-black tracking-tight text-foreground sm:text-4xl">
                           {selectedNote.title}
                         </h2>
                       </div>
 
                       {/* Full-Scale Fluid Technical Text Engine */}
-                      <div className="markdown-preview max-h-115 flex-1 overflow-y-auto pr-1 text-sm leading-relaxed font-medium text-foreground/90">
+                      <div className="markdown-preview max-h-[60vh] flex-1 overflow-y-auto pr-2 text-base leading-relaxed font-medium text-foreground/90">
                         <ReactMarkdown>{selectedNote.content}</ReactMarkdown>
                       </div>
                     </>
                   ) : (
-                    <div className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-center">
-                      <div className="rounded-full border border-primary/10 bg-primary/5 p-3 text-primary">
-                        <Sparkles className="h-5 w-5" />
+                    <div className="flex flex-1 animate-in flex-col items-center justify-center gap-4 py-20 text-center duration-500 zoom-in-95">
+                      <div className="rounded-full border border-primary/20 bg-primary/10 p-5 text-primary shadow-inner">
+                        <Sparkles className="h-8 w-8" />
                       </div>
-                      <div>
-                        <p className="text-xs font-bold text-muted-foreground">
+                      <div className="space-y-1.5">
+                        <p className="text-lg font-bold text-foreground">
                           Study Studio Vacant
                         </p>
-                        <p className="mx-auto mt-0.5 max-w-xs text-[11px] text-muted-foreground/50">
-                          Select an entry from the ledger index panel or build a
-                          pristine configuration.
+                        <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground/60">
+                          Select an entry from the ledger index panel or
+                          initiate a pristine configuration to begin logging.
                         </p>
                       </div>
+                      <Button
+                        onClick={handleInitNewNote}
+                        variant="outline"
+                        className="mt-4 rounded-xl border-border/50 bg-background/50 shadow-sm backdrop-blur-sm hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+                      >
+                        Start Writing Now
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -514,19 +609,19 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
 
       {/* Global CSS Typography Engine for Knowledge Base Text Structures */}
       <style>{`
-        .markdown-preview h1 { font-size: 1.35rem; font-weight: 800; margin-top: 1.25rem; margin-bottom: 0.5rem; color: var(--foreground); tracking: -0.02em; border-b: 1px solid hsl(var(--border)/0.3); padding-bottom: 0.25rem; }
-        .markdown-preview h2 { font-size: 1.15rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.4rem; color: var(--foreground); tracking: -0.01em; }
-        .markdown-preview h3 { font-size: 1rem; font-weight: 600; margin-top: 0.75rem; margin-bottom: 0.3rem; color: var(--foreground); }
-        .markdown-preview p { margin-bottom: 0.75rem; color: inherit; line-height: 1.65; text-align: justify; }
+        .markdown-preview h1 { font-size: 1.75rem; font-weight: 900; margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--foreground); letter-spacing: -0.03em; border-b: 1px solid hsl(var(--border)/0.4); padding-bottom: 0.5rem; }
+        .markdown-preview h2 { font-size: 1.4rem; font-weight: 800; margin-top: 1.25rem; margin-bottom: 0.5rem; color: var(--foreground); letter-spacing: -0.02em; }
+        .markdown-preview h3 { font-size: 1.15rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.4rem; color: var(--foreground); letter-spacing: -0.01em;}
+        .markdown-preview p { margin-bottom: 1rem; color: inherit; line-height: 1.75; text-align: left; }
         .markdown-preview p:last-child { margin-bottom: 0; }
-        .markdown-preview strong { font-weight: 700; color: var(--foreground); }
-        .markdown-preview ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; }
-        .markdown-preview ol { list-style-type: decimal; padding-left: 1.25rem; margin-bottom: 0.75rem; }
-        .markdown-preview li { margin-bottom: 0.25rem; }
-        .markdown-preview code { font-family: monospace; background-color: hsl(var(--muted)/0.5); border: 1px solid hsl(var(--border)/0.4); padding: 0.15rem 0.35rem; border-radius: 6px; font-size: 0.85em; color: hsl(var(--primary)); font-weight: 600; }
-        .markdown-preview pre { background: hsl(var(--muted)/0.3); padding: 0.75rem 1rem; border-radius: 12px; overflow-x: auto; margin-top: 0.5rem; margin-bottom: 0.75rem; border: 1px solid hsl(var(--border)/0.3); shadow: inset 0 1px 2px rgba(0,0,0,0.05); }
-        .markdown-preview pre code { background: transparent; padding: 0; border: none; color: var(--foreground); font-weight: 400; }
-        .markdown-preview blockquote { border-left: 3px solid hsl(var(--primary)/0.6); padding-left: 0.85rem; color: hsl(var(--muted-foreground)); font-style: italic; margin-top: 0.5rem; margin-bottom: 0.75rem; }
+        .markdown-preview strong { font-weight: 800; color: var(--foreground); }
+        .markdown-preview ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .markdown-preview ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .markdown-preview li { margin-bottom: 0.35rem; padding-left: 0.25rem; }
+        .markdown-preview code { font-family: monospace; background-color: hsl(var(--muted)/0.7); border: 1px solid hsl(var(--border)/0.5); padding: 0.2rem 0.4rem; border-radius: 6px; font-size: 0.85em; color: hsl(var(--primary)); font-weight: 600; }
+        .markdown-preview pre { background: hsl(var(--muted)/0.4); padding: 1rem 1.25rem; border-radius: 12px; overflow-x: auto; margin-top: 0.75rem; margin-bottom: 1rem; border: 1px solid hsl(var(--border)/0.4); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .markdown-preview pre code { background: transparent; padding: 0; border: none; color: var(--foreground); font-weight: 400; font-size: 0.9em; }
+        .markdown-preview blockquote { border-left: 4px solid hsl(var(--primary)/0.6); background: hsl(var(--primary)/0.03); padding: 0.75rem 1rem; border-radius: 0 8px 8px 0; color: hsl(var(--muted-foreground)); font-style: italic; margin-top: 1rem; margin-bottom: 1rem; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>

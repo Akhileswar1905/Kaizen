@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { Zap, Trophy } from "lucide-react"
+import { ShieldAlert, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface SystemNotificationProps {
@@ -19,10 +19,12 @@ export function SystemNotification({
 }: SystemNotificationProps) {
   useEffect(() => {
     if (isOpen) {
-      const timer = setTimeout(onClose, 5000)
+      // Keep level-up screens visible slightly longer for impact
+      const duration = levelUp ? 6000 : 4500
+      const timer = setTimeout(onClose, duration)
       return () => clearTimeout(timer)
     }
-  }, [isOpen, onClose])
+  }, [isOpen, onClose, levelUp])
 
   if (!isOpen) return null
 
@@ -31,78 +33,95 @@ export function SystemNotification({
   return (
     <div
       className={cn(
-        "pointer-events-none fixed z-100 transition-all duration-500",
+        "fixed z-50 transition-all duration-500",
         isLevelUp
-          ? "inset-0 flex items-center justify-center"
-          : "top-6 right-6 flex flex-col gap-2"
+          ? "pointer-events-auto inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          : "pointer-events-none top-6 right-6 flex flex-col gap-2"
       )}
     >
       <div
         className={cn(
-          "animate-in overflow-hidden rounded-lg border bg-card p-0 shadow-2xl transition-all duration-300 fade-in",
+          "pointer-events-auto animate-in overflow-hidden border bg-zinc-950/95 shadow-2xl transition-all duration-300",
           isLevelUp
-            ? "w-full max-w-md scale-110 border-primary bg-card/90 shadow-primary/40 backdrop-blur-xl"
-            : "w-72 border-primary bg-card p-4 shadow-primary/20"
+            ? "relative w-full max-w-md scale-100 rounded-none border-white/40 p-6 text-center tracking-tight shadow-white/10 duration-500 zoom-in-95"
+            : "w-80 rounded-sm border-zinc-800 p-4 shadow-black/80 fade-in slide-in-from-top-4"
         )}
       >
-        {/* Header Line */}
-        <div
-          className={cn("h-1 w-full bg-primary", isLevelUp && "animate-pulse")}
-        />
+        {/* Solo Leveling Corner UI Framing Accents (Only for Level Up Screens) */}
+        {isLevelUp && (
+          <>
+            <div className="absolute top-2 left-2 h-2 w-2 border-t-2 border-l-2 border-white/60" />
+            <div className="absolute top-2 right-2 h-2 w-2 border-t-2 border-r-2 border-white/60" />
+            <div className="absolute bottom-2 left-2 h-2 w-2 border-b-2 border-l-2 border-white/60" />
+            <div className="absolute right-2 bottom-2 h-2 w-2 border-r-2 border-b-2 border-white/60" />
+          </>
+        )}
 
+        {/* Top Status Border Strip */}
         <div
           className={cn(
-            "p-4",
-            !isLevelUp && "p-0" // Handle padding differently for toast
+            "absolute top-0 left-0 h-[2px] bg-white transition-all",
+            isLevelUp ? "w-full animate-pulse opacity-80" : "w-1/3 opacity-40"
           )}
-        >
-          <div className="mb-2 flex items-center gap-2">
+        />
+
+        <div className="space-y-4">
+          {/* Header Module */}
+          <div
+            className={cn(
+              "flex items-center gap-2",
+              isLevelUp ? "justify-center" : "justify-start"
+            )}
+          >
             {isLevelUp ? (
-              <Trophy className="h-5 w-5 animate-bounce text-primary" />
+              <Sparkles className="h-4 w-4 animate-spin text-white [animation-duration:3s]" />
             ) : (
-              <Zap className="h-4 w-4 animate-pulse text-primary" />
+              <ShieldAlert className="h-3.5 w-3.5 text-zinc-400" />
             )}
             <span
               className={cn(
-                "font-mono font-bold tracking-widest text-primary uppercase",
-                isLevelUp ? "text-sm" : "text-[10px]"
+                "font-mono font-black tracking-[0.25em] text-white uppercase",
+                isLevelUp ? "text-xs" : "text-[10px] text-zinc-400"
               )}
             >
-              {isLevelUp ? "System: Level Up Achieved" : "System Message"}
+              {isLevelUp ? "[ SYSTEM: LEVELED UP ]" : "[ SYSTEM NOTICE ]"}
             </span>
           </div>
 
-          <div className="space-y-3">
+          {/* Content Body Module */}
+          <div className={cn("space-y-3", isLevelUp ? "py-2" : "py-0")}>
             <p
               className={cn(
-                "font-mono text-foreground",
-                isLevelUp
-                  ? "text-center text-lg font-bold"
-                  : "text-sm font-medium"
+                "font-mono leading-relaxed font-medium text-zinc-300",
+                isLevelUp ? "text-base tracking-wide text-white" : "text-xs"
               )}
             >
-              {message}
+              {isLevelUp ? `Congratulations. ${message}` : message}
             </p>
 
+            {/* Incremental Stat Updates */}
             {stat && (
               <div
                 className={cn(
-                  "flex items-center justify-center gap-2 font-mono font-bold text-primary",
-                  isLevelUp ? "text-base" : "text-xs"
+                  "flex items-center justify-between border border-zinc-800/80 bg-zinc-900/60 px-3 py-1.5 font-mono font-bold tracking-wide text-white",
+                  isLevelUp ? "mx-auto max-w-xs text-sm" : "text-xs"
                 )}
               >
-                <span>{stat.label}</span>
-                <span className="text-lg">+{stat.value}</span>
+                <span className="text-[10px] tracking-wider text-zinc-400 uppercase">
+                  {stat.label}
+                </span>
+                <span>[ +{stat.value} ]</span>
               </div>
             )}
 
+            {/* Main Level Crest */}
             {levelUp && (
-              <div className="mt-4 animate-in rounded-md border border-primary/30 bg-primary/10 p-4 text-center duration-500 zoom-in">
-                <span className="block font-mono text-2xl font-black tracking-tighter text-primary uppercase">
-                  LEVEL {levelUp}
+              <div className="mt-6 border-y border-zinc-800 bg-zinc-900/20 py-4 text-center">
+                <span className="block font-mono text-4xl font-black tracking-tight text-white">
+                  LV. {levelUp}
                 </span>
-                <span className="font-mono text-[10px] tracking-[0.3em] text-primary/60 uppercase">
-                  Limits broken. Potential expanded.
+                <span className="mt-1 block font-mono text-[9px] font-bold tracking-[0.35em] text-zinc-500 uppercase">
+                  Limits Broken // Potential Expanded
                 </span>
               </div>
             )}

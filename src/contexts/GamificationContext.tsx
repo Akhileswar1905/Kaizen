@@ -14,12 +14,17 @@ import {
   getXpForNextLevel,
   calculateRank,
   calculateStatIncrease,
+  derivePlayerStats,
+  type LogAggregation,
 } from "@/lib/gamification"
 import { SystemNotification } from "@/components/shared/Widgets/SystemNotification"
+import { format, subDays } from "date-fns"
 
 interface GamificationContextType {
   playerStats: PlayerStats | null
   triggerGamificationEvent: (event: GamificationEvent) => Promise<any>
+  subtractGamificationPoints: (event: GamificationEvent) => Promise<any>
+  recalculateAndSyncStats: () => Promise<PlayerStats | null>
   showNotification: (config: {
     message: string
     stat?: { label: string; value: number }
@@ -148,11 +153,120 @@ export function GamificationProvider({
     }
   }
 
+  const subtractGamificationPoints = async (event: GamificationEvent) => {
+    if (!playerStats) return null
+
+    const mapping = XP_MAPPING[event.type]
+    const statIncrease = calculateStatIncrease(event)
+
+    let newXp = Math.max(0, playerStats.xp - mapping.xp)
+    let newLevel = playerStats.level
+
+    const updatedStats = {
+      ...playerStats,
+      xp: newXp,
+      level: newLevel,
+      [statIncrease.stat]: Math.max(
+        0,
+        playerStats[statIncrease.stat] - statIncrease.value
+      ),
+      rank: calculateRank(newLevel, playerStats.current_streak),
+      updated_at: new Date().toISOString(),
+    }
+
+    const { error } = await supabase.from("player_stats").upsert(updatedStats)
+
+    if (error) {
+      console.error("Failed to subtract gamification stats:", error)
+      return null
+    } else {
+      setPlayerStats(updatedStats)
+      return true
+    }
+  }
+
+  const recalculateAndSyncStats = useCallback(async () => {
+    if (userId === "anonymous") return null
+
+    try {
+      const [
+        habitLogsRes,
+        dsaCompletionsRes,
+        journalsRes,
+        weeklyReviewsRes,
+        systemDesignRes,
+        financeRes,
+        varsityRes,
+        notesRes,
+      ] = await Promise.all([
+        supabase.from("habit_logs").select("*").eq("user_id", userId),
+        supabase.from("dsa_completions").select("*").eq("user_id", userId),
+        supabase.from("journals").select("entry_date").eq("user_id", userId),
+        supabase
+          .from("weekly_reviews")
+          .select("week_start_date")
+          .eq("user_id", userId),
+        supabase
+          .from("system_design_progress")
+          .select("*")
+          .eq("user_id", userId),
+        supabase.from("expenses").select("id").eq("user_id", userId),
+        supabase.from("varsity_progress").select("*").eq("user_id", userId),
+        supabase.from("notes").select("id").eq("user_id", userId),
+      ])
+
+      const aggregation: LogAggregation = {
+        habitLogs: habitLogsRes.data || [],
+        dsaCompletions: dsaCompletionsRes.data || [],
+        journals: journalsRes.data || [],
+        weeklyReviews: weeklyReviewsRes.data || [],
+        systemDesignProgress: systemDesignRes.data || [],
+        financeLogs: financeRes.data || [],
+        varsityProgress: varsityRes.data || [],
+        notes: notesRes.data || [],
+      }
+
+      let globalStreak = 0
+      let checkDate = new Date()
+      const activityDates = new Set([
+        ...aggregation.habitLogs
+          .filter((l) => l.is_completed)
+          .map((l) => l.log_date),
+        ...aggregation.journals.map((j) => j.entry_date),
+        ...aggregation.weeklyReviews.map((r) => r.week_start_date),
+      ])
+
+      let dateStr = format(checkDate, "yyyy-MM-dd")
+      if (!activityDates.has(dateStr)) {
+        checkDate = subDays(checkDate, 1)
+        dateStr = format(checkDate, "yyyy-MM-dd")
+      }
+      while (activityDates.has(dateStr)) {
+        globalStreak++
+        checkDate = subDays(checkDate, 1)
+        dateStr = format(checkDate, "yyyy-MM-dd")
+      }
+
+      const derivedStats = derivePlayerStats(userId, aggregation, globalStreak)
+
+      const { error } = await supabase.from("player_stats").upsert(derivedStats)
+      if (error) throw error
+
+      setPlayerStats(derivedStats)
+      return derivedStats
+    } catch (err) {
+      console.error("Error recalculating stats:", err)
+      return null
+    }
+  }, [userId])
+
   return (
     <GamificationContext.Provider
       value={{
         playerStats,
         triggerGamificationEvent,
+        subtractGamificationPoints,
+        recalculateAndSyncStats,
         showNotification,
       }}
     >

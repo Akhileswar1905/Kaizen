@@ -3,15 +3,18 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils"
 import {
   Loader2,
-  Plus,
-  IndianRupee,
   Trash2,
-  Receipt,
-  PieChart,
+  PieChart as PieChartIcon,
   Coffee,
   Car,
   ShoppingBag,
@@ -21,8 +24,11 @@ import {
   TrendingUp,
   Activity,
   Calendar,
+  ChevronRight,
+  BarChart3,
+  Wallet,
 } from "lucide-react"
-import { format } from "date-fns"
+import { format, subDays } from "date-fns"
 import {
   Select,
   SelectContent,
@@ -30,6 +36,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useGamification } from "@/contexts/GamificationContext"
+
+// Recharts primitives (shadcn wraps these)
+import { PieChart, Pie, AreaChart, Area, XAxis, YAxis } from "recharts"
+
+// Shadcn Chart Components
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
 
 const CATEGORIES = [
   "General",
@@ -39,6 +57,20 @@ const CATEGORIES = [
   "Bills",
   "Entertainment",
 ]
+
+// 1. Define the Chart Config for shadcn
+const chartConfig = {
+  amount: {
+    label: "Amount",
+    color: "hsl(var(--chart-1))",
+  },
+  general: { label: "General", color: "hsl(var(--chart-1))" },
+  food: { label: "Food", color: "hsl(var(--chart-2))" },
+  transport: { label: "Transport", color: "hsl(var(--chart-3))" },
+  shopping: { label: "Shopping", color: "hsl(var(--chart-4))" },
+  bills: { label: "Bills", color: "hsl(var(--chart-5))" },
+  entertainment: { label: "Entertainment", color: "hsl(var(--chart-1))" },
+} satisfies ChartConfig
 
 const getCategoryIcon = (category: string, className: string = "h-4 w-4") => {
   switch (category) {
@@ -59,6 +91,8 @@ const getCategoryIcon = (category: string, className: string = "h-4 w-4") => {
 
 export function ExpenseTracker() {
   const { user } = useAuth()
+  const { triggerGamificationEvent, subtractGamificationPoints } =
+    useGamification()
   const [expenses, setExpenses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -67,7 +101,7 @@ export function ExpenseTracker() {
   const [title, setTitle] = useState("")
   const [amount, setAmount] = useState("")
   const [category, setCategory] = useState("General")
-  const [date] = useState(new Date().toISOString().split("T")[0])
+  const [date, setDate] = useState<Date>(new Date())
 
   useEffect(() => {
     if (user) fetchExpenses()
@@ -94,7 +128,7 @@ export function ExpenseTracker() {
       title,
       amount: parseFloat(amount),
       category,
-      date,
+      date: format(date, "yyyy-MM-dd"),
     }
 
     const { data, error } = await supabase
@@ -107,6 +141,8 @@ export function ExpenseTracker() {
       setExpenses([data, ...expenses])
       setTitle("")
       setAmount("")
+      setDate(new Date())
+      await triggerGamificationEvent({ type: "FINANCE_LOGGED", amount: 1 })
     }
     setIsSubmitting(false)
   }
@@ -114,263 +150,388 @@ export function ExpenseTracker() {
   const handleDelete = async (id: string) => {
     setExpenses(expenses.filter((e) => e.id !== id))
     await supabase.from("expenses").delete().match({ id })
+    await subtractGamificationPoints({ type: "FINANCE_LOGGED", amount: 1 })
   }
 
+  // --- ANALYTICS COMPUTATIONS ---
   const totalSpent = useMemo(
     () => expenses.reduce((sum, exp) => sum + Number(exp.amount), 0),
     [expenses]
   )
+
+  const highestCategory = useMemo(() => {
+    const totals: Record<string, number> = {}
+    expenses.forEach((exp) => {
+      totals[exp.category] = (totals[exp.category] || 0) + Number(exp.amount)
+    })
+    const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1])
+    return sorted.length > 0
+      ? { name: sorted[0][0], amount: sorted[0][1] }
+      : null
+  }, [expenses])
 
   const categoryAnalytics = useMemo(() => {
     const totals: Record<string, number> = {}
     expenses.forEach((exp) => {
       totals[exp.category] = (totals[exp.category] || 0) + Number(exp.amount)
     })
-
     return Object.entries(totals)
       .map(([name, amount]) => ({
-        name,
-        amount,
-        percentage: (amount / totalSpent) * 100,
+        category: name,
+        value: amount,
+        // Map to shadcn CSS variable keys based on the category name
+        fill: `var(--chart-${CATEGORIES.indexOf(name) + 1})`,
       }))
-      .sort((a, b) => b.amount - a.amount)
-  }, [expenses, totalSpent])
+      .sort((a, b) => b.value - a.value)
+  }, [expenses])
 
-  if (loading) {
+  const dailyTrend = useMemo(() => {
+    const days = Array.from({ length: 7 })
+      .map((_, i) => {
+        return format(subDays(new Date(), i), "MMM dd")
+      })
+      .reverse()
+
+    const trendData = days.map((day) => ({ name: day, amount: 0 }))
+
+    expenses.forEach((exp) => {
+      const expDate = format(new Date(exp.date), "MMM dd")
+      const dayIndex = trendData.findIndex((d) => d.name === expDate)
+      if (dayIndex !== -1) {
+        trendData[dayIndex].amount += Number(exp.amount)
+      }
+    })
+
+    return trendData
+  }, [expenses])
+
+  // --- RENDER ---
+  if (loading)
     return (
-      <div className="mx-auto max-w-3xl space-y-6 p-4">
-        <div className="h-32 w-full animate-pulse rounded-2xl border border-border/40 bg-muted/20" />
-        <div className="h-48 w-full animate-pulse rounded-2xl border border-border/40 bg-muted/10" />
+      <div className="mx-auto max-w-5xl animate-pulse space-y-6 p-6">
+        <div className="h-32 rounded-2xl bg-muted/20" />
+        <div className="flex gap-6">
+          <div className="h-64 flex-1 rounded-2xl bg-muted/10" />
+          <div className="h-64 flex-1 rounded-2xl bg-muted/10" />
+        </div>
       </div>
     )
-  }
 
   return (
-    <div className="animate-fade-in mx-auto max-w-3xl space-y-5 p-3 sm:p-6">
-      {/* Dashboard Top Row: Total & Analytics */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-5">
-        {/* Core Jumbotron Panel */}
-        <Card className="relative flex flex-col justify-center overflow-hidden rounded-2xl border border-border/50 bg-card p-5 shadow-sm sm:col-span-1 sm:p-6 md:col-span-2">
-          <div className="pointer-events-none absolute top-0 right-0 p-4 opacity-[0.03] sm:opacity-10">
-            <TrendingUp className="h-20 w-20 sm:h-24 sm:w-24" />
-          </div>
-          <div className="z-10 space-y-1 sm:space-y-2">
-            <h2 className="flex items-center gap-2 text-xs font-semibold tracking-tight text-foreground/80 sm:text-sm">
-              <Activity className="h-3.5 w-3.5 text-foreground/60" />
-              Total Outflow
-            </h2>
-            <div className="flex items-baseline gap-0.5 overflow-hidden text-ellipsis whitespace-nowrap">
-              <IndianRupee className="h-5 w-6 shrink-0 text-foreground/60 sm:h-6" />
-              <span className="truncate text-3xl font-bold tracking-tighter text-foreground sm:text-4xl">
-                {totalSpent.toLocaleString("en-IN", {
-                  maximumFractionDigits: 0,
-                })}
+    <div className="mx-auto max-w-5xl animate-in space-y-6 p-2 duration-700 fade-in sm:p-4">
+      {/* 1. KPI Stats Row */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Card className="border-border/50 bg-card/40 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
+                Net Outflow
+              </p>
+              <Wallet className="h-4 w-4 text-primary opacity-50" />
+            </div>
+            <div className="mt-4 flex items-baseline gap-1">
+              <span className="text-xl font-light text-muted-foreground">
+                ₹
+              </span>
+              <span className="text-4xl font-black tracking-tighter text-foreground">
+                {totalSpent.toLocaleString("en-IN")}
               </span>
             </div>
-            <p className="text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
-              Lifetime Spend
-            </p>
-          </div>
+          </CardContent>
         </Card>
 
-        {/* Analytics Distribution Panel */}
-        <Card className="flex flex-col justify-between rounded-2xl border border-border/50 bg-card p-5 shadow-sm sm:col-span-1 md:col-span-3">
-          <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-tight text-foreground sm:mb-4 sm:text-sm">
-            <PieChart className="h-3.5 w-3.5 text-foreground/60" />
-            Category Distribution
-          </h2>
+        <Card className="border-border/50 bg-card/40 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
+                Total Logs
+              </p>
+              <Activity className="h-4 w-4 text-primary opacity-50" />
+            </div>
+            <div className="mt-4 flex items-baseline gap-1">
+              <span className="text-4xl font-black tracking-tighter text-foreground">
+                {expenses.length}
+              </span>
+              <span className="text-sm font-medium text-muted-foreground">
+                Transactions
+              </span>
+            </div>
+          </CardContent>
+        </Card>
 
-          {categoryAnalytics.length > 0 ? (
-            <div className="space-y-3 sm:space-y-4">
-              {categoryAnalytics.slice(0, 3).map((cat) => (
-                <div key={cat.name} className="space-y-1">
-                  <div className="flex justify-between gap-2 text-xs font-medium">
-                    <span className="flex items-center gap-1.5 truncate text-foreground/80">
-                      {getCategoryIcon(cat.name, "h-3 w-3 opacity-70 shrink-0")}
-                      <span className="truncate">{cat.name}</span>
-                    </span>
-                    <span className="shrink-0 font-mono text-foreground/90">
-                      ₹
-                      {cat.amount.toLocaleString("en-IN", {
-                        maximumFractionDigits: 0,
-                      })}
-                      <span className="ml-1 text-[10px] text-muted-foreground">
-                        ({Math.round(cat.percentage)}%)
-                      </span>
-                    </span>
-                  </div>
-                  <Progress
-                    value={cat.percentage}
-                    className="h-1 bg-muted/50 sm:h-1.5"
-                  />
-                </div>
-              ))}
+        <Card className="border-border/50 bg-card/40 backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
+                Highest Drain
+              </p>
+              <TrendingUp className="h-4 w-4 text-destructive opacity-50" />
             </div>
-          ) : (
-            <div className="flex flex-1 flex-col items-center justify-center py-3 text-xs text-muted-foreground opacity-50">
-              <PieChart className="mb-1 h-6 w-6" />
-              <span>No data to analyze</span>
+            <div className="mt-4 flex flex-col">
+              <span className="text-2xl font-black tracking-tighter text-foreground">
+                {highestCategory?.name || "N/A"}
+              </span>
+              <span className="text-sm font-medium text-muted-foreground">
+                ₹{highestCategory?.amount.toLocaleString("en-IN") || 0}
+              </span>
             </div>
-          )}
+          </CardContent>
         </Card>
       </div>
 
-      {/* Action Layer: Add Expense Form */}
-      <Card className="rounded-2xl border border-border/50 bg-card shadow-sm">
-        <CardContent className="p-4 sm:p-5">
+      {/* 2. Analytics Row */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Trend Area Chart */}
+        <Card className="flex flex-col border-border/50 bg-card/20 lg:col-span-7">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-xs font-bold tracking-wider text-muted-foreground uppercase">
+              <BarChart3 className="h-4 w-4" /> 7-Day Trend
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="min-h-[250px] flex-1 p-4">
+            <ChartContainer config={chartConfig} className="h-[250px] w-full">
+              <AreaChart
+                data={dailyTrend}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="fillAmount" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="5%"
+                      stopColor="var(--chart-1)"
+                      stopOpacity={0.8}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--chart-1)"
+                      stopOpacity={0.1}
+                    />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="name"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  stroke="hsl(var(--muted-foreground))"
+                />
+                <YAxis
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  stroke="hsl(var(--muted-foreground))"
+                  tickFormatter={(val) => `₹${val}`}
+                />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="dashed" />}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="var(--chart-1)"
+                  fillOpacity={1}
+                  fill="url(#fillAmount)"
+                />
+              </AreaChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Category Donut Chart */}
+        <Card className="flex flex-col border-border/50 bg-card/20 lg:col-span-5">
+          <CardHeader className="pb-0">
+            <CardTitle className="flex items-center gap-2 text-xs font-bold tracking-wider text-muted-foreground uppercase">
+              <PieChartIcon className="h-4 w-4" /> Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="relative flex min-h-[250px] flex-1 items-center justify-center">
+            {categoryAnalytics.length > 0 ? (
+              <>
+                <ChartContainer
+                  config={chartConfig}
+                  className="h-[250px] w-full"
+                >
+                  <PieChart>
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Pie
+                      data={categoryAnalytics}
+                      dataKey="value"
+                      nameKey="category"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      stroke="none"
+                    />
+                  </PieChart>
+                </ChartContainer>
+                {/* Center text for donut */}
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
+                    Total
+                  </span>
+                  <span className="text-lg font-black">
+                    ₹
+                    {totalSpent > 999
+                      ? (totalSpent / 1000).toFixed(1) + "k"
+                      : totalSpent}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No data to display.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 3. Input Form */}
+      <Card className="border-border/40 bg-card/50 backdrop-blur-xl">
+        <CardContent className="p-6">
           <form
             onSubmit={handleAddExpense}
-            className="flex flex-col gap-3 md:flex-row md:items-end"
+            className="grid grid-cols-1 items-end gap-4 sm:grid-cols-12"
           >
-            <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-4 md:grid-cols-4">
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
-                  Description
-                </label>
-                <Input
-                  placeholder="What did you buy?"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="h-9 border-border/40 bg-muted/10 text-sm shadow-none sm:h-10"
-                  required
-                />
-              </div>
+            <div className="space-y-2 sm:col-span-4">
+              <label className="ml-1 text-[10px] font-bold tracking-tighter text-muted-foreground uppercase">
+                Detail
+              </label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Terminal access, supplies, etc."
+                className="border-border/50 bg-background/50 shadow-inner focus-visible:ring-1 focus-visible:ring-primary"
+                required
+              />
+            </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
-                  Amount
-                </label>
-                <div className="relative">
-                  <IndianRupee className="absolute top-2.5 left-3 h-3.5 w-3.5 text-muted-foreground/70 sm:top-3" />
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="h-9 border-border/40 bg-muted/10 pl-8 font-mono text-sm shadow-none sm:h-10"
-                    required
+            <div className="space-y-2 sm:col-span-2">
+              <label className="ml-1 text-[10px] font-bold tracking-tighter text-muted-foreground uppercase">
+                Amount
+              </label>
+              <Input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0"
+                className="border-border/50 bg-background/50 font-mono shadow-inner focus-visible:ring-1 focus-visible:ring-primary"
+                required
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-3">
+              <label className="ml-1 text-[10px] font-bold tracking-tighter text-muted-foreground uppercase">
+                Category
+              </label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="border-border/50 bg-background/50 shadow-inner focus:ring-1 focus:ring-primary">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 sm:col-span-3">
+              <label className="ml-1 text-[10px] font-bold tracking-tighter text-muted-foreground uppercase">
+                Date
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start border-border/50 bg-background/50 text-left font-normal shadow-inner hover:bg-background/80 hover:text-foreground",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : <span>Pick date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto border-border/50 p-0">
+                  <CalendarComponent
+                    mode="single"
+                    selected={date}
+                    onSelect={(d) => d && setDate(d)}
                   />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
-                  Category
-                </label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="h-9 border-border/40 bg-muted/10 text-sm shadow-none sm:h-10">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem
-                        key={cat}
-                        value={cat}
-                        className="cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2 text-sm">
-                          {getCategoryIcon(
-                            cat,
-                            "h-3.5 w-3.5 text-muted-foreground"
-                          )}
-                          {cat}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <Button
               disabled={isSubmitting}
               type="submit"
-              className="mt-2 h-9 w-full shrink-0 rounded-xl transition-all active:scale-95 sm:h-10 md:mt-0 md:w-20"
+              className="mt-2 w-full font-bold tracking-wide transition-all hover:opacity-90 sm:col-span-12"
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <>
-                  <Plus className="mr-1 h-4 w-4 md:hidden" />
-                  <span>Add</span>
-                </>
+                "Add Expense"
               )}
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      {/* Ledger Layer: Transaction History */}
-      <div className="space-y-3 pt-1">
-        <div className="flex items-center justify-between px-1">
-          <h3 className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase sm:text-xs">
-            Recent Transactions
-          </h3>
-          <span className="font-mono text-[10px] font-medium text-muted-foreground/60">
-            {expenses.length} Records
-          </span>
-        </div>
-
-        {expenses.length === 0 && !loading ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/60 bg-muted/5 py-10 text-center text-xs text-muted-foreground sm:text-sm">
-            <Receipt className="h-7 w-7 opacity-40" />
-            <p>
-              Your ledger is empty.
-              <br />
-              Add your first expense above.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-2">
-            {expenses.map((expense) => (
-              <div
-                key={expense.id}
-                className="group flex items-center justify-between gap-4 rounded-xl border border-border/40 bg-card p-3 transition-all duration-200 hover:border-border/80 hover:shadow-sm"
-              >
-                <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/30 bg-muted/20 text-foreground/70 transition-colors group-hover:bg-background group-hover:shadow-sm">
-                    {getCategoryIcon(expense.category, "h-3.5 w-3.5")}
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-sm font-semibold tracking-tight text-foreground">
-                      {expense.title}
-                    </span>
-                    <div className="mt-0.5 flex items-center gap-1.5 overflow-hidden text-[10px] font-medium text-muted-foreground/80">
-                      <span className="shrink-0 tracking-wider uppercase">
-                        {expense.category}
-                      </span>
-                      <span className="shrink-0 text-muted-foreground/30">
-                        •
-                      </span>
-                      <span className="flex items-center gap-1 truncate font-mono">
-                        <Calendar className="h-2.5 w-2.5 shrink-0 opacity-60" />
-                        {format(new Date(expense.date), "MMM dd, yyyy")}
-                      </span>
-                    </div>
-                  </div>
+      {/* 4. Ledger List */}
+      <div className="space-y-4 pt-4">
+        <h3 className="flex items-center gap-2 text-xs font-bold tracking-widest text-muted-foreground uppercase">
+          <ChevronRight className="h-3 w-3" /> Recent Transactions
+        </h3>
+        <div className="grid gap-3">
+          {expenses.length === 0 && (
+            <div className="rounded-xl border border-dashed border-border/50 py-8 text-center text-sm text-muted-foreground">
+              No transactions found. Begin tracking.
+            </div>
+          )}
+          {expenses.map((expense) => (
+            <div
+              key={expense.id}
+              className="group flex items-center justify-between rounded-xl border border-border/20 bg-card/40 p-4 backdrop-blur-sm transition-all hover:border-primary/40 hover:bg-card/60"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                  {getCategoryIcon(expense.category, "h-4 w-4")}
                 </div>
-
-                <div className="ml-2 flex shrink-0 items-center gap-2 sm:gap-3">
-                  <span className="font-mono text-sm font-bold text-foreground">
-                    -₹
-                    {expense.amount.toLocaleString("en-IN", {
-                      maximumFractionDigits: 2,
-                    })}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(expense.id)}
-                    className="h-8 w-8 shrink-0 rounded-lg text-destructive/70 opacity-100 transition-all hover:bg-destructive/10 hover:text-destructive md:opacity-0 md:group-hover:opacity-100"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                <div>
+                  <p className="font-bold tracking-tight text-foreground">
+                    {expense.title}
+                  </p>
+                  <p className="flex items-center gap-1.5 text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+                    {expense.category} •{" "}
+                    {format(new Date(expense.date), "MMM d, yyyy")}
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+              <div className="flex items-center gap-4">
+                <span className="font-mono text-base font-black text-foreground">
+                  -₹{expense.amount.toLocaleString()}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(expense.id)}
+                  className="h-8 w-8 text-destructive opacity-0 transition-opacity group-hover:opacity-100 hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

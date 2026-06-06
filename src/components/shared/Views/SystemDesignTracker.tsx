@@ -17,6 +17,7 @@ import {
   Layers,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useGamification } from "@/contexts/GamificationContext"
 
 interface SystemDesignHubProps {
   onBack: () => void
@@ -25,6 +26,8 @@ interface SystemDesignHubProps {
 export function SystemDesignHub({ onBack }: SystemDesignHubProps) {
   const { user } = useAuth()
   const userId = user?.id
+  const { triggerGamificationEvent, subtractGamificationPoints } =
+    useGamification()
 
   const [selectedModule, setSelectedModule] = useState<SystemModule | null>(
     null
@@ -64,12 +67,20 @@ export function SystemDesignHub({ onBack }: SystemDesignHubProps) {
         module_number: moduleId,
         topic_index: topicIdx,
       })
+      await subtractGamificationPoints({
+        type: "SYSTEM_DESIGN_MODULE",
+        amount: 1,
+      })
     } else {
       updated.add(key)
       await supabase.from("system_design_progress").upsert({
         user_id: userId,
         module_number: moduleId,
         topic_index: topicIdx,
+      })
+      await triggerGamificationEvent({
+        type: "SYSTEM_DESIGN_MODULE",
+        amount: 1,
       })
     }
     setCompletedSet(updated)

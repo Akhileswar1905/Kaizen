@@ -5,16 +5,6 @@ import { startOfWeek, subWeeks, addWeeks, format } from "date-fns"
 import { supabase } from "@/lib/supabase"
 import * as Icons from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
-import {
-  type PlayerStats,
-  type GamificationEvent,
-  XP_MAPPING,
-  getXpForNextLevel,
-  calculateRank,
-  calculateStatIncrease,
-  derivePlayerStats,
-  type LogAggregation,
-} from "@/lib/gamification"
 import { useGamification } from "@/contexts/GamificationContext"
 
 export type Habit = {
@@ -38,10 +28,14 @@ export function useTracker() {
 
   const { user } = useAuth() // Get the authenticated user
   const userId = user?.id || "anonymous" // Fallback to "anonymous" if user is not logged in
-  const { showNotification } = useGamification()
+  const {
+    triggerGamificationEvent,
+    subtractGamificationPoints,
+    playerStats,
+    recalculateAndSyncStats,
+  } = useGamification()
 
   const [habits, setHabits] = useState<Habit[]>([])
-  const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null)
 
   // Format: { "habitId-YYYY-MM-DD": true }
   const [logs, setLogs] = useState<Record<string, boolean>>({})
@@ -98,181 +92,6 @@ export function useTracker() {
     setIsLoading(false)
   }, [userId])
 
-  const fetchPlayerStats = useCallback(async () => {
-    const { data } = await supabase
-      .from("player_stats")
-      .select("*")
-      .eq("user_id", userId)
-      .single()
-
-    if (data) {
-      setPlayerStats(data)
-    } else {
-      // Initialize new player if none exists
-      const { data: newData, error: initError } = await supabase
-        .from("player_stats")
-        .insert([{ user_id: userId }])
-        .select()
-        .single()
-
-      if (initError) {
-        console.error("Error initializing player stats:", initError)
-      } else if (newData) {
-        setPlayerStats(newData)
-      }
-    }
-  }, [userId])
-
-  const recalculateAndSyncStats = useCallback(async () => {
-    try {
-      // 1. Fetch all logs for aggregation
-      const [habitLogsRes, dsaCompletionsRes, journalsRes, weeklyReviewsRes] =
-        await Promise.all([
-          supabase.from("habit_logs").select("*").eq("user_id", userId),
-          supabase.from("dsa_completions").select("*").eq("user_id", userId),
-          supabase.from("journals").select("entry_date").eq("user_id", userId),
-          supabase
-            .from("weekly_reviews")
-            .select("week_start_date")
-            .eq("user_id", userId),
-        ])
-
-      if (
-        habitLogsRes.error ||
-        dsaCompletionsRes.error ||
-        journalsRes.error ||
-        weeklyReviewsRes.error
-      ) {
-        throw new Error("Failed to fetch logs for stat recalculation")
-      }
-
-      // 2. Aggregate logs
-      const aggregation: LogAggregation = {
-        habitLogs: habitLogsRes.data || [],
-        dsaCompletions: dsaCompletionsRes.data || [],
-        journals: journalsRes.data || [],
-        weeklyReviews: weeklyReviewsRes.data || [],
-      }
-
-      // 3. Calculate current streak (Global activity streak)
-      let globalStreak = 0
-      let checkDate = new Date()
-      const activityDates = new Set([
-        ...aggregation.habitLogs
-          .filter((l) => l.is_completed)
-          .map((l) => l.log_date),
-        ...aggregation.journals.map((j) => j.entry_date),
-        ...aggregation.weeklyReviews.map((r) => r.week_start_date),
-      ])
-
-      let dateStr = format(checkDate, "yyyy-MM-dd")
-      if (!activityDates.has(dateStr)) {
-        checkDate = subDays(checkDate, 1)
-        dateStr = format(checkDate, "yyyy-MM-dd")
-      }
-      while (activityDates.has(dateStr)) {
-        globalStreak++
-        checkDate = subDays(checkDate, 1)
-        dateStr = format(checkDate, "yyyy-MM-dd")
-      }
-
-      // 4. Derive stats
-      const derivedStats = derivePlayerStats(userId, aggregation, globalStreak)
-
-      // 5. Sync to Supabase
-      const { error } = await supabase.from("player_stats").upsert(derivedStats)
-      if (error) throw error
-
-      setPlayerStats(derivedStats)
-      return derivedStats
-    } catch (err) {
-      console.error("Error recalculating stats:", err)
-      return null
-    }
-  }, [userId])
-
-  const triggerGamificationEvent = async (event: GamificationEvent) => {
-    if (!playerStats) return null
-
-    const mapping = XP_MAPPING[event.type]
-    const statIncrease = calculateStatIncrease(event)
-
-    let newXp = playerStats.xp + mapping.xp
-    let newLevel = playerStats.level
-    let leveledUp = false
-
-    // Handle Level Up
-    while (newXp >= getXpForNextLevel(newLevel)) {
-      newXp -= getXpForNextLevel(newLevel)
-      newLevel++
-      leveledUp = true
-    }
-
-    const updatedStats: PlayerStats = {
-      ...playerStats,
-      xp: newXp,
-      level: newLevel,
-      [statIncrease.stat]: playerStats[statIncrease.stat] + statIncrease.value,
-      rank: calculateRank(newLevel, playerStats.current_streak),
-      updated_at: new Date().toISOString(),
-    }
-
-    const { error } = await supabase.from("player_stats").upsert(updatedStats)
-
-    if (error) {
-      console.error("Failed to update gamification stats:", error)
-      return null
-    } else {
-      setPlayerStats(updatedStats)
-      return {
-        xpGained: mapping.xp,
-        statGained: {
-          label: statIncrease.stat.toUpperCase(),
-          value: statIncrease.value,
-        },
-        newLevel: newLevel,
-        leveledUp,
-      }
-    }
-  }
-
-  const subtractGamificationPoints = async (event: GamificationEvent) => {
-    if (!playerStats) return null
-
-    const mapping = XP_MAPPING[event.type]
-    const statIncrease = calculateStatIncrease(event)
-
-    // Subtract XP and cap at 0
-    let newXp = Math.max(0, playerStats.xp - mapping.xp)
-    let newLevel = playerStats.level
-
-    // Handle Level Down (optional, but keeps it consistent)
-    // If XP is 0 and we are above level 1, we could potentially drop a level
-    // but most games don't do this. Let's just cap XP at 0 for now.
-
-    const updatedStats = {
-      ...playerStats,
-      xp: newXp,
-      level: newLevel,
-      [statIncrease.stat]: Math.max(
-        0,
-        playerStats[statIncrease.stat] - statIncrease.value
-      ),
-      rank: calculateRank(newLevel, playerStats.current_streak),
-      updated_at: new Date().toISOString(),
-    }
-
-    const { error } = await supabase.from("player_stats").upsert(updatedStats)
-
-    if (error) {
-      console.error("Failed to subtract gamification stats:", error)
-      return null
-    } else {
-      setPlayerStats(updatedStats)
-      return true
-    }
-  }
-
   // Handle checking/unchecking a habit
   const toggleHabit = async (habitId: string, date: Date) => {
     const dateString = format(date, "yyyy-MM-dd")
@@ -300,13 +119,6 @@ export function useTracker() {
         type: "HABIT_COMPLETED",
         amount: 1,
       })
-      if (result) {
-        showNotification({
-          message: `Habit completed! +${result.xpGained} XP`,
-          stat: result.statGained,
-          levelUp: result.leveledUp ? result.newLevel : undefined,
-        })
-      }
     } else {
       // Subtract points when unchecking a habit to prevent point farming
       await subtractGamificationPoints({ type: "HABIT_COMPLETED", amount: 1 })
@@ -461,6 +273,7 @@ export function useTracker() {
         .eq("problem_id", problemId)
         .eq("user_id", userId)
       setDsaCompleted((prev) => prev.filter((id) => id !== problemId))
+      await subtractGamificationPoints({ type: "DSA_SOLVED", amount: 1 })
     } else {
       // Check it (Insert to Supabase)
       await supabase
@@ -468,17 +281,10 @@ export function useTracker() {
         .insert([{ problem_id: problemId, user_id: userId }])
       setDsaCompleted((prev) => [...prev, problemId])
 
-      const result = await triggerGamificationEvent({
+      await triggerGamificationEvent({
         type: "DSA_SOLVED",
         amount: 1,
       })
-      if (result) {
-        showNotification({
-          message: `DSA Problem solved! +${result.xpGained} XP`,
-          stat: result.statGained,
-          levelUp: result.leveledUp ? result.newLevel : undefined,
-        })
-      }
     }
   }
 
@@ -635,9 +441,7 @@ export function useTracker() {
   useEffect(() => {
     fetchWeekData()
     fetchDsaProgress()
-    fetchPlayerStats()
-    // recalculateAndSyncStats()
-  }, [fetchWeekData, fetchDsaProgress, fetchPlayerStats])
+  }, [fetchWeekData, fetchDsaProgress])
 
   return {
     IconMap,
@@ -676,6 +480,7 @@ export function useTracker() {
     setActiveView,
     playerStats,
     triggerGamificationEvent,
+    subtractGamificationPoints,
     recalculateAndSyncStats,
   }
 }
