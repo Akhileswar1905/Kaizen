@@ -1,21 +1,26 @@
-export type PlayerRank = 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+export type PlayerRank = "E" | "D" | "C" | "B" | "A" | "S"
 
 export interface PlayerStats {
-  user_id: string;
-  level: number;
-  xp: number;
-  rank: PlayerRank;
-  strength: number;
-  intelligence: number;
-  vitality: number;
-  willpower: number;
-  luck: number;
-  current_streak: number;
-  max_streak: number;
-  updated_at: string;
+  user_id: string
+  level: number
+  xp: number
+  rank: PlayerRank
+  strength: number
+  intelligence: number
+  vitality: number
+  willpower: number
+  luck: number
+  current_streak: number
+  max_streak: number
+  updated_at: string
 }
 
-export type StatType = 'strength' | 'intelligence' | 'vitality' | 'willpower' | 'luck';
+export type StatType =
+  | "strength"
+  | "intelligence"
+  | "vitality"
+  | "willpower"
+  | "luck"
 
 export type GamificationEvent =
   | { type: "HABIT_COMPLETED"; amount: number }
@@ -27,6 +32,7 @@ export type GamificationEvent =
   | { type: "REFINEMENT_QUEST_DONE"; amount: number }
   | { type: "VARSITY_CHAPTER_COMPLETED"; amount: number }
   | { type: "NOTE_SAVED"; amount: number }
+  | { type: "EXERCISE_ADDED"; amount: number }
 
 export const XP_MAPPING: Record<
   GamificationEvent["type"],
@@ -36,11 +42,12 @@ export const XP_MAPPING: Record<
   DSA_SOLVED: { xp: 25, stat: "intelligence" },
   SYSTEM_DESIGN_MODULE: { xp: 50, stat: "strength" },
   JOURNAL_SAVED: { xp: 20, stat: "willpower" },
-  WEEKLY_REVIEW_DONE: { xp: 100, stat: "willpower" },
+  WEEKLY_REVIEW_DONE: { xp: 10, stat: "willpower" },
   FINANCE_LOGGED: { xp: 5, stat: "luck" },
   REFINEMENT_QUEST_DONE: { xp: 15, stat: "willpower" },
   VARSITY_CHAPTER_COMPLETED: { xp: 30, stat: "intelligence" },
   NOTE_SAVED: { xp: 15, stat: "willpower" },
+  EXERCISE_ADDED: { xp: 0, stat: "strength" },
 }
 
 /**
@@ -71,6 +78,10 @@ export function calculateStatIncrease(event: GamificationEvent): {
   value: number
 } {
   const mapping = XP_MAPPING[event.type]
+  // calculate the xp for exercise added dynamically based on the xp provided in the event
+  if (event.type === "EXERCISE_ADDED") {
+    mapping.xp = event.amount
+  }
   return {
     stat: mapping.stat,
     value: Math.floor(mapping.xp / 10) || 1,

@@ -29,37 +29,48 @@ import {
   CheckCircle2,
 } from "lucide-react"
 import { format } from "date-fns"
+import { useGamification } from "@/contexts/GamificationContext"
 
+// HARD MODE TUNING: Reduced exercise point multipliers across all ranks by 40-50%
 const XP_MULTIPLIERS: Record<string, number> = {
-  "Push-ups": 1.0,
-  Squats: 1.0,
-  Lunges: 1.0,
-  Plank: 0.5,
-  "Wall Sits": 0.8,
-  "Inverted Rows": 1.1,
-  "Diamond Push-ups": 1.2,
-  Dips: 1.2,
-  "Chin-ups": 1.4,
-  "Pull-ups": 1.5,
-  "Pike Push-ups": 1.5,
-  "Bulgarian Split Squats": 1.3,
-  "Hollow Body Hold": 0.8,
-  "Archer Push-ups": 1.6,
-  "Explosive Pull-ups": 1.8,
-  "Pistol Squats": 1.8,
-  "Shrimp Squats": 1.8,
-  "Straight Bar Dips": 1.7,
-  "L-Sit": 1.5,
-  "Muscle-ups": 2.5,
-  "Handstand Push-ups": 2.5,
-  "Front Lever Raises": 2.3,
-  "Typewriter Pull-ups": 2.0,
-  "Dragon Flags": 2.2,
-  "One-Arm Push-ups": 3.0,
-  "One-Arm Pull-ups": 4.0,
-  "Front Lever Hold": 2.5,
-  "Human Flag": 3.5,
-  Planche: 4.0,
+  // E-Rank (Fundamentals) - Previous baseline was 1.0
+  "Push-ups": 0.5,
+  Squats: 0.5,
+  Lunges: 0.5,
+  Plank: 0.2,
+  "Wall Sits": 0.4,
+  "Inverted Rows": 0.6,
+
+  // D-Rank (Intermediate) - Previous baseline was ~1.2 - 1.5
+  "Diamond Push-ups": 0.7,
+  Dips: 0.7,
+  "Chin-ups": 0.8,
+  "Pull-ups": 0.9,
+  "Pike Push-ups": 0.9,
+  "Bulgarian Split Squats": 0.8,
+  "Hollow Body Hold": 0.4,
+
+  // C-Rank (Advanced) - Previous baseline was ~1.5 - 1.8
+  "Archer Push-ups": 1.0,
+  "Explosive Pull-ups": 1.1,
+  "Pistol Squats": 1.1,
+  "Shrimp Squats": 1.1,
+  "Straight Bar Dips": 1.0,
+  "L-Sit": 0.9,
+
+  // B-Rank (Elite) - Previous baseline was ~2.0 - 2.5
+  "Muscle-ups": 1.5,
+  "Handstand Push-ups": 1.5,
+  "Front Lever Raises": 1.4,
+  "Typewriter Pull-ups": 1.2,
+  "Dragon Flags": 1.3,
+
+  // A-Rank (Mastery) - Previous baseline was ~2.5 - 4.0
+  "One-Arm Push-ups": 1.8,
+  "One-Arm Pull-ups": 2.4,
+  "Front Lever Hold": 1.5,
+  "Human Flag": 2.0,
+  Planche: 2.5,
 }
 
 const RANK_GROUPS = {
@@ -114,16 +125,15 @@ const TIMED_EXERCISES = [
   "Planche",
 ]
 
-// Guide data matrix containing execution rules and media placeholder configurations
 interface GuideItem {
   description: string
   muscles: string[]
   cues: string[]
-  videoUrl?: string // Drop YouTube embed or MP4/GIF assets here
+  steps: string[] // Added for step-by-step instructions
+  videoUrl?: string
 }
 
 const EXERCISE_GUIDES: Record<string, GuideItem> = {
-  // --- E-RANK ---
   "Push-ups": {
     description: "The foundation of all horizontal pressing power.",
     muscles: ["Chest", "Triceps", "Anterior Deltoids", "Core"],
@@ -131,6 +141,12 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Rigid straight line from head to heels.",
       "Brace core and glutes.",
       "Elbows at 45-degree angle.",
+    ],
+    steps: [
+      "Place your hands slightly wider than shoulder-width apart on the floor.",
+      "Extend your legs straight back, balancing on the balls of your feet to enter a high plank position.",
+      "Lower your body by bending your elbows until your chest nearly touches the ground.",
+      "Push through your palms to return to the starting layout while maintaining a rigid spine.",
     ],
     videoUrl: "https://www.youtube.com/embed/IODxDxX7oi4",
   },
@@ -142,6 +158,12 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Maintain neutral spine.",
       "Explode through heels.",
     ],
+    steps: [
+      "Stand with your feet shoulder-width apart, toes pointing slightly outward.",
+      "Inhale, engage your core, and drop your hips back and down as if sitting into a chair.",
+      "Descend until your thighs are parallel to or below the floor.",
+      "Exhale and drive through your heels to stand back up into a full lockout configuration.",
+    ],
     videoUrl: "https://www.youtube.com/embed/UXbPVIGU0Jc",
   },
   Lunges: {
@@ -152,12 +174,24 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Front knee tracking over toes.",
       "Controlled descent.",
     ],
+    steps: [
+      "Stand tall with feet hip-width apart and hands resting on hips.",
+      "Take a controlled step forward with your working leg.",
+      "Lower your hips until your rear knee points toward the floor and your front knee forms a 90-degree angle.",
+      "Push forcefully off your front foot to return to the clean standing start layout.",
+    ],
     videoUrl: "https://www.youtube.com/embed/Z2n58m2i4jg",
   },
   Plank: {
     description: "Isometric pillar check for core stability.",
     muscles: ["Rectus Abdominis", "Obliques", "Transverse Abdominis"],
     cues: ["Protract shoulders.", "Posterior pelvic tilt.", "Squeeze quads."],
+    steps: [
+      "Place your forearms on the floor, parallel to each other, with elbows directly beneath your shoulders.",
+      "Extend your legs straight back to create a continuous straight body line from head to heels.",
+      "Actively tuck your pelvis inward and protract your shoulder blades upward away from the ground.",
+      "Hold this strict mechanical lock position while maintaining deep, controlled breathing patterns.",
+    ],
     videoUrl: "https://www.youtube.com/embed/pSHjTRCQxIw",
   },
   "Wall Sits": {
@@ -167,6 +201,12 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Keep thighs parallel to floor.",
       "Back flat against wall.",
       "Breathe steadily.",
+    ],
+    steps: [
+      "Press your back completely flat against a sturdy wall layout.",
+      "Slide down the surface while stepping your feet forward until your knees create a strict 90-degree angle.",
+      "Ensure your thighs are parallel to the floor and your knees align directly over your ankles.",
+      "Maintain your hands away from your knees, keeping full isolation tension on the quads.",
     ],
     videoUrl: "https://www.youtube.com/embed/F-k5P140d3E",
   },
@@ -178,10 +218,14 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Pull elbows toward ribs.",
       "Full scapular retraction.",
     ],
+    steps: [
+      "Position yourself underneath a low bar or suspension setup and grab it with an overhand grip.",
+      "Extend your legs completely outward, pulling your body up into a straight line hanging stance.",
+      "Pull your chest up cleanly to meet the bar by driving your elbows aggressively down behind your ribs.",
+      "Lower yourself smoothly back down into full arm extension without sagging your lower spine.",
+    ],
     videoUrl: "https://www.youtube.com/embed/e21gW0aYt7U",
   },
-
-  // --- D-RANK ---
   "Diamond Push-ups": {
     description: "Triceps-dominant pressing variation.",
     muscles: ["Triceps", "Inner Chest", "Deltoids"],
@@ -189,6 +233,12 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Hands in diamond shape.",
       "Keep elbows close to body.",
       "Full range of motion.",
+    ],
+    steps: [
+      "Set up a standard push-up platform, but place your index fingers and thumbs together to form a diamond shape.",
+      "Lower your chest down cleanly until it lightly taps the back of your hands.",
+      "Keep your elbows locked tightly against the sides of your ribcage to prevent shoulder strain.",
+      "Explode upward through your palms, emphasizing triceps recruitment.",
     ],
     videoUrl: "https://www.youtube.com/embed/J0DnG1_S92I",
   },
@@ -200,12 +250,24 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Forward lean for chest.",
       "Lock out elbows.",
     ],
+    steps: [
+      "Mount the parallel bars with your arms completely locked and shoulders depressed away from your ears.",
+      "Inhale and lower your body by bending at the elbows, tilting your torso slightly forward.",
+      "Descend smoothly until your shoulders track just below elbow level.",
+      "Press out powerfully back to the top lockout point while actively stabilizing your lower body.",
+    ],
     videoUrl: "https://www.youtube.com/embed/wjUmnrzES4I",
   },
   "Chin-ups": {
     description: "Vertical pull with increased biceps engagement.",
     muscles: ["Biceps", "Lats", "Brachialis"],
     cues: ["Supinated grip.", "Full extension at bottom.", "Chest to bar."],
+    steps: [
+      "Grab the pull-up bar with an underhand (supinated) grip, hands spaced shoulder-width apart.",
+      "Begin from a dead hang position with your arms fully extended and shoulder blades stretched out.",
+      "Pull your torso upward by sinking your elbows toward your pockets, keeping your chest leading.",
+      "Clear your chin over the top bar line before executing a controlled, smooth descent.",
+    ],
     videoUrl: "https://www.youtube.com/embed/brxkoP_sZ1g",
   },
   "Pull-ups": {
@@ -215,6 +277,12 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Scapular depression.",
       "Drive elbows to hips.",
       "Clean chin clearance.",
+    ],
+    steps: [
+      "Hang from the bar using an overhand (pronated) grip slightly wider than shoulder width.",
+      "Depress your scapula downward first to cleanly engage your back muscles before the arms bend.",
+      "Pull your chest directly toward the bar by driving your elbows aggressively down into your sides.",
+      "Lower yourself at a controlled tempo until you reach a full dead hang baseline.",
     ],
     videoUrl: "https://www.youtube.com/embed/eGo4IYlbE5g",
   },
@@ -226,12 +294,24 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Head moves forward of hands.",
       "Control descent.",
     ],
+    steps: [
+      "Assume a high push-up layout, then walk your feet closer to your hands to drive your hips high into an inverted 'V' geometry.",
+      "Lower your head forward down in a diagonal path, creating a tripod pattern with your hands.",
+      "Lightly touch the crown of your head to the floor.",
+      "Push back up diagonally along that same clean track to re-extend your shoulders and core.",
+    ],
     videoUrl: "https://www.youtube.com/embed/mk5r9t1j1_4",
   },
   "Bulgarian Split Squats": {
     description: "Extreme unilateral leg development and balance.",
     muscles: ["Quadriceps", "Glutes"],
     cues: ["Elevated rear foot.", "Chest upright.", "Deep hip flexion."],
+    steps: [
+      "Place the top of your trailing foot flat onto an elevated bench or step behind you.",
+      "Step your working lead foot out far enough so your front knee doesn't pass far beyond your toes during depth transition.",
+      "Lower your back knee directly toward the floor in a strict single-leg structural drop.",
+      "Drive up via your lead heel back to full elevation while preserving a vertical spine.",
+    ],
     videoUrl: "https://www.youtube.com/embed/v2Y4s1Y4v6A",
   },
   "Hollow Body Hold": {
@@ -242,10 +322,14 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Shoulders and legs elevated.",
       "Total body tension.",
     ],
+    steps: [
+      "Lie down flat on your back with legs straight out and arms extended back past your head.",
+      "Contract your abs aggressively to glue your lower back flat to the surface, removing any spacing underneath.",
+      "Lift your shoulder blades and feet a few inches off the floor simultaneously.",
+      "Point your toes and lock out your knees, compressing your core structure into a static shape.",
+    ],
     videoUrl: "https://www.youtube.com/embed/vF_W9a-m9Xo",
   },
-
-  // --- C-RANK ---
   "Archer Push-ups": {
     description: "Unilateral weight shifting for chest and shoulder strength.",
     muscles: ["Chest", "Deltoids", "Core"],
@@ -254,12 +338,24 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Deep range of motion.",
       "Keep core stabilized.",
     ],
+    steps: [
+      "Adopt a wide hand setup on the floor, with fingers pointed slightly outward.",
+      "Lower your weight entirely over to one side, bending that working arm's elbow completely.",
+      "Keep your non-working opposite arm completely locked out straight as it slides outward.",
+      "Press through the loaded hand back up to center before cycling over to the other side.",
+    ],
     videoUrl: "https://www.youtube.com/embed/wJKLatFY-aU",
   },
   "Explosive Pull-ups": {
     description: "Power output training for pulling movements.",
     muscles: ["Lats", "Upper Back", "Biceps"],
     cues: ["Aggressive pull.", "High velocity.", "Full control."],
+    steps: [
+      "Hang with an overhand grip, maintaining a highly engaged hollow body alignment.",
+      "Fire your nervous system to pull down against the bar with maximum velocity.",
+      "Aim to pull your chest or upper waist to bar level using momentum-free kinetic power.",
+      "Catch yourself smoothly at the peak and decelerate the descent back down safely.",
+    ],
     videoUrl: "https://www.youtube.com/embed/i0WJ5vC9L00",
   },
   "Pistol Squats": {
@@ -270,18 +366,36 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Drive through mid-foot.",
       "Upright torso.",
     ],
+    steps: [
+      "Stand on one foot while lifting your opposite leg straight out in front of your body.",
+      "Extend your arms forward for balance, then slowly drop your hips back onto your single heel.",
+      "Descend into a full single-leg squat depth, keeping your forward foot hovering above the floor.",
+      "Drive through the mid-foot of your planted leg to recover to a crisp vertical position.",
+    ],
     videoUrl: "https://www.youtube.com/embed/2eH3t9rK_fQ",
   },
   "Shrimp Squats": {
     description: "Dynamic unilateral balance for leg development.",
     muscles: ["Glutes", "Quadriceps"],
     cues: ["Hold rear foot.", "Touch knee to floor.", "Maintain balance."],
+    steps: [
+      "Stand on one leg, bend your trailing leg behind you, and grab that foot with your hand.",
+      "Slowly lower your hips downward, hinging forward slightly to maintain your active center of mass.",
+      "Lightly tap your back knee to the floor without resting your weight down.",
+      "Drive through your front foot to stand back up, tracking your knee securely.",
+    ],
     videoUrl: "https://www.youtube.com/embed/L13-e40YmG8",
   },
   "Straight Bar Dips": {
     description: "Functional upper body pushing strength on a straight bar.",
     muscles: ["Triceps", "Chest", "Shoulders"],
     cues: ["Keep bar centered.", "Full lockout.", "Stabilize core."],
+    steps: [
+      "Support yourself on top of a single straight bar with arms fully straight and core highly tensed.",
+      "Lean your upper chest slightly over the bar as you bend your elbows back out of the way.",
+      "Lower yourself down cleanly until your lower chest or upper abdomen touches the bar surface.",
+      "Press your frame away from the bar using full raw chest and triceps authority back to mechanical lockout.",
+    ],
     videoUrl: "https://www.youtube.com/embed/gB-eH49Nn1U",
   },
   "L-Sit": {
@@ -292,10 +406,14 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Shoulders depressed.",
       "Hard protraction.",
     ],
+    steps: [
+      "Sit flat on the ground or press down on parallettes with hands placed close to your hips.",
+      "Depress your shoulders downward hard, lifting your entire torso and butt up off the ground.",
+      "Engage your hip flexors and abs to lift your legs straight forward parallel to the floor.",
+      "Lock out your knees completely and point your toes, fighting to hold the 'L' shape configuration.",
+    ],
     videoUrl: "https://www.youtube.com/embed/w253Fw6041A",
   },
-
-  // --- B-RANK ---
   "Muscle-ups": {
     description:
       "Elite dynamic execution converting pulling velocity into pushing leverage.",
@@ -304,6 +422,12 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Hollow body swing.",
       "Explosive sternum pull.",
       "Aggressive transition.",
+    ],
+    steps: [
+      "Initiate a clean hollow body style kip swing underneath a straight bar setup.",
+      "At the peak of the backswing, execute an explosive diagonal pull to fling your ribs up over the bar.",
+      "Quickly snap your head and shoulders forward over the bar to transition into the deep dip pocket.",
+      "Press out your triceps smoothly to complete the top structural lockout phase.",
     ],
     videoUrl: "https://www.youtube.com/embed/g2J_S-3-qS4",
   },
@@ -315,6 +439,12 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Brace core for stability.",
       "Controlled descent.",
     ],
+    steps: [
+      "Kick up into a clean, vertical handstand against a wall layout or freestanding space.",
+      "Brace your core muscles rigidly to avoid letting your lower back arch out into a banana curve.",
+      "Lower your body systematically by bending your elbows until your head gently targets the floor.",
+      "Press the world away through your palms to return to full overhead lockout alignment.",
+    ],
     videoUrl: "https://www.youtube.com/embed/KEfazWGOUok",
   },
   "Front Lever Raises": {
@@ -325,12 +455,24 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Full range of motion.",
       "Controlled tempo.",
     ],
+    steps: [
+      "Hang from a bar with a solid overhand grip, locking your elbows down completely.",
+      "Without bending your arms, leverage your lats to pull your entire straight body line up toward the ceiling.",
+      "Continue raising your body until your hips reach bar level and your frame is perfectly horizontal.",
+      "Lower your frame back down to a dead hang smoothly over a controlled eccentric tempo.",
+    ],
     videoUrl: "https://www.youtube.com/embed/W9l6-i0n0XQ",
   },
   "Typewriter Pull-ups": {
     description: "Unilateral weight shifting under high-load tension.",
     muscles: ["Lats", "Biceps"],
     cues: ["Hold top position.", "Shift side to side.", "Maintain tension."],
+    steps: [
+      "Execute a standard wide overhand pull-up, drawing your upper chest right to bar level.",
+      "While keeping your chin cleanly over the bar, shift your entire body horizontally toward your right hand.",
+      "Extend your left arm completely straight across the bar as your weight reloads onto the right lat.",
+      "Slide back across to the center or the left side smoothly before lowering yourself down.",
+    ],
     videoUrl: "https://www.youtube.com/embed/kR2U2b9f3Xg",
   },
   "Dragon Flags": {
@@ -341,10 +483,14 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Keep body as one plank.",
       "Slow eccentric.",
     ],
+    steps: [
+      "Lie back on a flat bench and securely anchor your hands behind your head on the bench edges.",
+      "Kick your feet up high and raise your entire torso, balancing your weight on your upper traps/shoulders.",
+      "Squeeze your glutes, abs, and legs together to turn your body into a single unbending plank line.",
+      "Lower your straight body line down slowly until it skims just above the bench, then pull back up.",
+    ],
     videoUrl: "https://www.youtube.com/embed/6Lar9utB5ZU",
   },
-
-  // --- A-RANK ---
   "One-Arm Push-ups": {
     description: "Ultimate horizontal pressing stability test.",
     muscles: ["Chest", "Shoulders", "Core"],
@@ -353,30 +499,60 @@ const EXERCISE_GUIDES: Record<string, GuideItem> = {
       "Body square to floor.",
       "Controlled descent.",
     ],
+    steps: [
+      "Set up a standard push-up stance but split your feet out wide to act as stability outriggers.",
+      "Place your working hand centered under your chest and place your non-working arm tucked behind your back.",
+      "Lower your torso smoothly, rotating slightly to balance but keeping your chest close to square with the floor.",
+      "Fire your pectoral and oblique structures to drive straight back up to complete arm lockout.",
+    ],
     videoUrl: "https://www.youtube.com/embed/vH2s41u2Wq4",
   },
   "One-Arm Pull-ups": {
     description: "Absolute pinnacle of vertical pulling strength.",
     muscles: ["Lats", "Biceps", "Forearms"],
     cues: ["Active hang.", "Engage scapula.", "Vertical drive."],
+    steps: [
+      "Hang from the bar using only one arm, securing a crush grip on the steel frame.",
+      "Engage your shoulder blade downwards into a powerful active single-arm hang position.",
+      "Pull your body upwards with extreme intent, bringing your opposite shoulder up toward the bar layout.",
+      "Drive your working elbow down hard against your side until your chin clears the bar.",
+    ],
     videoUrl: "https://www.youtube.com/embed/rR171h0xH-4",
   },
   "Front Lever Hold": {
     description: "The core strength test for absolute back dominance.",
     muscles: ["Lats", "Core", "Lower Back"],
     cues: ["Arms locked.", "Full body line.", "Shoulder depression."],
+    steps: [
+      "Hang under the bar with straight arms and draw your knees up to check your initial shoulder torque.",
+      "Extend both legs straight out horizontally while forcing your arms to push down hard against the bar.",
+      "Depress your shoulder blades and squeeze your glutes to maintain your feet, hips, and chest in one parallel line.",
+      "Freeze all kinetic motion, holding your body fully horizontal against gravity's pull.",
+    ],
     videoUrl: "https://www.youtube.com/embed/69sxB5FBR6o",
   },
   "Human Flag": {
     description: "Mastery of gravity and core-shoulder lateral leverage.",
     muscles: ["Obliques", "Lats", "Shoulders"],
     cues: ["Push top hand/pull bottom.", "Core rigid.", "Body perpendicular."],
+    steps: [
+      "Take a wide vertical grip on a vertical pole setup, matching a top overhand pull position with a lower push brace.",
+      "Pull aggressively with your upper arm while throwing massive overhead pressing energy into the bottom arm.",
+      "Kick your legs sideways out off the floor, engaging your lateral obliques to maintain tracking.",
+      "Hold your spine and legs completely straight out, perpendicular to the vertical anchor fixture.",
+    ],
     videoUrl: "https://www.youtube.com/embed/DtraL3XSrtQ",
   },
   Planche: {
     description: "Absolute center-of-mass dominance and shoulder leverage.",
     muscles: ["Deltoids", "Chest", "Serratus"],
     cues: ["Locked elbows.", "Intense forward lean.", "Deep protraction."],
+    steps: [
+      "Place your hands on the ground or parallettes, turning your wrists slightly outward for wrist safety.",
+      "Protract your shoulder blades aggressively to form a rounded upper back dome pattern.",
+      "Lean your entire body weight significantly forward, shifting your center of mass directly over your hands.",
+      "Float your toes cleanly off the ground as your body achieves a horizontal plane alignment, keeping arms totally straight.",
+    ],
     videoUrl: "https://www.youtube.com/embed/3m4a3T2R8Xw",
   },
 }
@@ -402,6 +578,7 @@ export function WorkoutTracker({ onBack }: WorkoutTrackerProps) {
     useState<string>("Push-ups")
 
   const [exercises, setExercises] = useState<ExerciseLog[]>([])
+  const [strengthPoints, setStrengthPoints] = useState<number>(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [form, setForm] = useState({
@@ -411,6 +588,8 @@ export function WorkoutTracker({ onBack }: WorkoutTrackerProps) {
     rest: "90",
     duration: "",
   })
+
+  const { triggerGamificationEvent } = useGamification()
 
   const isCurrentExerciseTimed = useMemo(
     () => TIMED_EXERCISES.includes(form.name),
@@ -434,15 +613,28 @@ export function WorkoutTracker({ onBack }: WorkoutTrackerProps) {
   }, [exercises])
 
   useEffect(() => {
-    if (user) fetchExercises()
+    if (user) fetchUserData()
   }, [user])
 
-  const fetchExercises = async () => {
-    const { data, error } = await supabase
+  const fetchUserData = async () => {
+    setIsLoading(true)
+
+    const { data: logsData, error: logsError } = await supabase
       .from("calisthenics_logs")
       .select("*")
       .order("created_at", { ascending: false })
-    if (!error && data) setExercises(data)
+    if (!logsError && logsData) setExercises(logsData)
+
+    const { data: statsData, error: statsError } = await supabase
+      .from("player_stats")
+      .select("strength")
+      .eq("user_id", user?.id)
+      .maybeSingle()
+
+    if (!statsError && statsData) {
+      setStrengthPoints(statsData.strength || 0)
+    }
+
     setIsLoading(false)
   }
 
@@ -470,29 +662,50 @@ export function WorkoutTracker({ onBack }: WorkoutTrackerProps) {
       xp_earned: calculatedXp,
     }
 
-    const { data, error } = await supabase
+    const { data: logResult, error: logError } = await supabase
       .from("calisthenics_logs")
       .insert([newLog])
       .select()
       .single()
-    if (!error && data) {
-      setExercises([data, ...exercises])
+
+    if (!logError && logResult) {
+      setExercises([logResult, ...exercises])
+
+      const finalStrengthPoints = strengthPoints + calculatedXp
+
+      const { error: statsError } = await supabase.from("player_stats").upsert(
+        {
+          user_id: user.id,
+          strength: finalStrengthPoints,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      )
+
+      triggerGamificationEvent({
+        type: "EXERCISE_ADDED",
+        amount: calculatedXp,
+      })
+
+      if (!statsError) {
+        setStrengthPoints(finalStrengthPoints)
+      } else {
+        console.error("Tracking error on player_stats updates:", statsError)
+      }
+
       setForm({ name: "", reps: "", sets: "", rest: "90", duration: "" })
     }
     setIsSubmitting(false)
   }
 
-  const totalXp = useMemo(
-    () => exercises.reduce((sum, ex) => sum + ex.xp_earned, 0),
-    [exercises]
-  )
-  const currentLevel = Math.floor(Math.sqrt(totalXp / 100)) + 1
+  const currentLevel = Math.floor(Math.sqrt(strengthPoints / 100)) + 1
   const xpForNextLevel = Math.pow(currentLevel, 2) * 100
   const xpForCurrentLevel = Math.pow(currentLevel - 1, 2) * 100
   const progressPct =
-    totalXp === 0
+    strengthPoints === 0
       ? 0
-      : ((totalXp - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) *
+      : ((strengthPoints - xpForCurrentLevel) /
+          (xpForNextLevel - xpForCurrentLevel)) *
         100
 
   const getExerciseRank = (name: string) => {
@@ -514,6 +727,10 @@ export function WorkoutTracker({ onBack }: WorkoutTrackerProps) {
         cues: [
           "Maintain balanced center-of-mass gravity alignment.",
           "Brace baseline muscle fibers cleanly.",
+        ],
+        steps: [
+          "Initialize baseline interface configuration position.",
+          "Execute mechanical motion pattern under strict kinetic control.",
         ],
       }
     )
@@ -575,7 +792,7 @@ export function WorkoutTracker({ onBack }: WorkoutTrackerProps) {
 
         {view === "tracker" ? (
           <>
-            {/* Level Banner */}
+            {/* Level Banner tied directly to Player Stats table context */}
             <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6 shadow-sm">
               <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
                 <div className="max-w-xl space-y-1.5">
@@ -593,7 +810,7 @@ export function WorkoutTracker({ onBack }: WorkoutTrackerProps) {
                   <div className="mb-2 flex justify-between text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                     <span>STR Progression</span>
                     <span className="font-mono font-semibold text-foreground">
-                      {totalXp} / {xpForNextLevel}
+                      {strengthPoints} / {xpForNextLevel}
                     </span>
                   </div>
                   <Progress
@@ -902,7 +1119,6 @@ export function WorkoutTracker({ onBack }: WorkoutTrackerProps) {
                       allowFullScreen
                     />
                   ) : (
-                    /* Tactical System Fallback Interface when live video link is unpopulated */
                     <div className="space-y-3 p-6 text-center">
                       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-border/50 bg-foreground/5 text-muted-foreground">
                         <Tv className="h-5 w-5 animate-pulse opacity-70" />
@@ -957,6 +1173,26 @@ export function WorkoutTracker({ onBack }: WorkoutTrackerProps) {
                         >
                           {muscle}
                         </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Step-by-Step Instructions Matrix */}
+                  <div className="space-y-3 pt-2">
+                    <span className="block text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                      Execution Steps
+                    </span>
+                    <div className="space-y-2.5">
+                      {activeGuideData.steps.map((step, idx) => (
+                        <div
+                          key={idx}
+                          className="flex gap-3 text-xs leading-relaxed text-foreground/90"
+                        >
+                          <span className="font-mono font-bold text-muted-foreground/80">
+                            {(idx + 1).toString().padStart(2, "0")}.
+                          </span>
+                          <span>{step}</span>
+                        </div>
                       ))}
                     </div>
                   </div>

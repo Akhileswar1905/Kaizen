@@ -470,38 +470,167 @@ export function useTracker() {
     }
   }, [isPomoActive, pomoTimeLeft, isPomoBreak])
 
-  // 1. Audio Notification
+  // 1. Audio Notification (Loud Hard Mode System Chime)
   const playSystemAlarm = useCallback(() => {
     try {
       const AudioContext =
         window.AudioContext || (window as any).webkitAudioContext
+
       if (!AudioContext) return
 
       const ctx = new AudioContext()
 
-      // Ensure the audio context is resumed (browser safety requirement)
       if (ctx.state === "suspended") {
         ctx.resume()
       }
 
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
+      const master = ctx.createGain()
+      master.gain.value = 0.6
+      master.connect(ctx.destination)
 
-      osc.connect(gain)
-      gain.connect(ctx.destination)
+      // ---------- REVERB ----------
+      const convolver = ctx.createConvolver()
 
-      osc.type = "sine"
-      // Solo Leveling style: Sharp, rising "system" tone
-      osc.frequency.setValueAtTime(400, ctx.currentTime)
-      osc.frequency.linearRampToValueAtTime(800, ctx.currentTime + 0.5)
+      const impulseLength = ctx.sampleRate * 2.5
+      const impulse = ctx.createBuffer(2, impulseLength, ctx.sampleRate)
 
-      gain.gain.setValueAtTime(0.3, ctx.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 1.5)
+      for (let channel = 0; channel < 2; channel++) {
+        const data = impulse.getChannelData(channel)
 
-      osc.start()
-      osc.stop(ctx.currentTime + 1.5)
+        for (let i = 0; i < impulseLength; i++) {
+          const decay = Math.pow(1 - i / impulseLength, 3)
+
+          data[i] = (Math.random() * 2 - 1) * decay * 0.4
+        }
+      }
+
+      convolver.buffer = impulse
+
+      const reverbGain = ctx.createGain()
+      reverbGain.gain.value = 0.35
+
+      convolver.connect(reverbGain)
+      reverbGain.connect(master)
+
+      // ---------- ECHO ----------
+      const delay = ctx.createDelay(1)
+
+      delay.delayTime.value = 0.32
+
+      const feedback = ctx.createGain()
+      feedback.gain.value = 0.28
+
+      delay.connect(feedback)
+      feedback.connect(delay)
+
+      const delayGain = ctx.createGain()
+      delayGain.gain.value = 0.25
+
+      delay.connect(delayGain)
+      delayGain.connect(master)
+
+      const now = ctx.currentTime
+
+      // ---------- BASS IMPACT ----------
+      const bass = ctx.createOscillator()
+      const bassGain = ctx.createGain()
+
+      bass.type = "sine"
+
+      bass.frequency.setValueAtTime(55, now)
+      bass.frequency.exponentialRampToValueAtTime(30, now + 0.5)
+
+      bassGain.gain.setValueAtTime(0.001, now)
+      bassGain.gain.exponentialRampToValueAtTime(0.7, now + 0.03)
+      bassGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.8)
+
+      bass.connect(bassGain)
+      bassGain.connect(master)
+
+      bass.start(now)
+      bass.stop(now + 0.8)
+
+      // ---------- ASCENDING CHORD ----------
+      const notes = [
+        { freq: 220, start: 0.15 },
+        { freq: 277.18, start: 0.35 },
+        { freq: 329.63, start: 0.55 },
+        { freq: 440, start: 0.85 },
+      ]
+
+      notes.forEach(({ freq, start }) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+
+        osc.type = "triangle"
+
+        osc.frequency.setValueAtTime(freq, now + start)
+
+        gain.gain.setValueAtTime(0.0001, now + start)
+
+        gain.gain.linearRampToValueAtTime(0.18, now + start + 0.08)
+
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + start + 1.8)
+
+        osc.connect(gain)
+
+        gain.connect(master)
+        gain.connect(convolver)
+        gain.connect(delay)
+
+        osc.start(now + start)
+        osc.stop(now + start + 2)
+      })
+
+      // ---------- SHIMMER ----------
+      const shimmer = ctx.createOscillator()
+      const shimmerGain = ctx.createGain()
+
+      shimmer.type = "sine"
+
+      shimmer.frequency.setValueAtTime(880, now + 1.2)
+
+      shimmer.frequency.exponentialRampToValueAtTime(1760, now + 2.4)
+
+      shimmerGain.gain.setValueAtTime(0.0001, now + 1.2)
+
+      shimmerGain.gain.linearRampToValueAtTime(0.08, now + 1.0)
+
+      shimmerGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.8)
+
+      shimmer.connect(shimmerGain)
+
+      shimmerGain.connect(master)
+      shimmerGain.connect(convolver)
+
+      shimmer.start(now + 1.2)
+      shimmer.stop(now + 2.8)
+
+      // ---------- FINAL ASCENSION SWEEP ----------
+      const sweep = ctx.createOscillator()
+      const sweepGain = ctx.createGain()
+
+      sweep.type = "sawtooth"
+
+      sweep.frequency.setValueAtTime(400, now + 1.8)
+
+      sweep.frequency.exponentialRampToValueAtTime(1400, now + 2.5)
+
+      sweepGain.gain.setValueAtTime(0.0001, now + 1.8)
+
+      sweepGain.gain.linearRampToValueAtTime(0.12, now + 1.0)
+
+      sweepGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.8)
+
+      sweep.connect(sweepGain)
+
+      sweepGain.connect(convolver)
+      sweepGain.connect(master)
+
+      sweep.start(now + 1.8)
+      sweep.stop(now + 2.8)
     } catch (error) {
-      console.error("Audio playback blocked by browser policy", error)
+      console.error("Failed to play sound:", error)
     }
   }, [])
 
@@ -626,6 +755,7 @@ export function useTracker() {
   useEffect(() => {
     fetchWeekData()
     fetchDsaProgress()
+    recalculateAndSyncStats()
   }, [fetchWeekData, fetchDsaProgress])
 
   return {
