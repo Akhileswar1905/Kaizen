@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Settings, X } from "lucide-react"
+import { Settings } from "lucide-react"
 
 interface PomodoroSettingsModalProps {
   isOpen: boolean
@@ -58,14 +58,6 @@ export function PomodoroSettingsModal({
               <Settings className="h-5 w-5 text-primary" />
               Pomodoro Settings
             </DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-8 w-8 rounded-full hover:bg-muted"
-            >
-              <X className="h-4 w-4 text-muted-foreground" />
-            </Button>
           </div>
         </DialogHeader>
 
