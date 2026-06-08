@@ -447,10 +447,12 @@ export function useTracker() {
   // ==========================================
   // POMODORO LOGIC (Cross-Browser Synced)
   // ==========================================
-  const WORK_TIME = 25 * 60
-  const BREAK_TIME = 5 * 60
+  const DEFAULT_WORK_TIME = 25 * 60
+  const DEFAULT_BREAK_TIME = 5 * 60
 
-  const [pomoTimeLeft, setPomoTimeLeft] = useState(WORK_TIME)
+  const [workDuration, setWorkDuration] = useState(DEFAULT_WORK_TIME)
+  const [breakDuration, setBreakDuration] = useState(DEFAULT_BREAK_TIME)
+  const [pomoTimeLeft, setPomoTimeLeft] = useState(DEFAULT_WORK_TIME)
   const [isPomoActive, setIsPomoActive] = useState(false)
   const [isPomoBreak, setIsPomoBreak] = useState(false)
 
@@ -459,6 +461,8 @@ export function useTracker() {
     isActive: isPomoActive,
     timeLeft: pomoTimeLeft,
     isBreak: isPomoBreak,
+    workDuration,
+    breakDuration,
   })
 
   // Update the ref silently every time state changes
@@ -467,8 +471,55 @@ export function useTracker() {
       isActive: isPomoActive,
       timeLeft: pomoTimeLeft,
       isBreak: isPomoBreak,
+      workDuration,
+      breakDuration,
     }
-  }, [isPomoActive, pomoTimeLeft, isPomoBreak])
+  }, [isPomoActive, pomoTimeLeft, isPomoBreak, workDuration, breakDuration])
+
+  // Load pomodoro settings from Supabase on mount
+  useEffect(() => {
+    if (!user?.id) return
+
+    const loadPomoSettings = async () => {
+      const { data } = await supabase
+        .from("pomodoro_settings")
+        .select("work_duration, break_duration")
+        .eq("user_id", user.id)
+        .single()
+
+      if (data) {
+        setWorkDuration(data.work_duration)
+        setBreakDuration(data.break_duration)
+        setPomoTimeLeft(data.work_duration)
+      }
+    }
+
+    loadPomoSettings()
+  }, [user?.id])
+
+  // Save pomodoro settings
+  const savePomoSettings = useCallback(
+    async (newWorkDuration: number, newBreakDuration: number) => {
+      if (!user?.id) return
+
+      setWorkDuration(newWorkDuration)
+      setBreakDuration(newBreakDuration)
+      // Reset timer when settings change
+      setPomoTimeLeft(newWorkDuration)
+      setIsPomoActive(false)
+      setIsPomoBreak(false)
+
+      await supabase.from("pomodoro_settings").upsert(
+        {
+          user_id: user.id,
+          work_duration: newWorkDuration,
+          break_duration: newBreakDuration,
+        },
+        { onConflict: "user_id" }
+      )
+    },
+    [user?.id]
+  )
 
   // 1. Audio Notification (Loud Hard Mode System Chime)
   const playSystemAlarm = useCallback(() => {
@@ -645,15 +696,17 @@ export function useTracker() {
         setIsPomoActive(payload.isActive)
         setPomoTimeLeft(payload.timeLeft)
         setIsPomoBreak(payload.isBreak)
+        if (payload.workDuration) setWorkDuration(payload.workDuration)
+        if (payload.breakDuration) setBreakDuration(payload.breakDuration)
       })
       .on("broadcast", { event: "REQUEST_STATE" }, () => {
         // Use the REF here. This guarantees we send the freshest data
         // without putting state in the dependency array.
         const current = pomoStateRef.current
-        if (
-          current.isActive ||
-          current.timeLeft !== (current.isBreak ? BREAK_TIME : WORK_TIME)
-        ) {
+        const expectedTime = current.isBreak
+          ? current.breakDuration
+          : current.workDuration
+        if (current.isActive || current.timeLeft !== expectedTime) {
           pomoChannel.send({
             type: "broadcast",
             event: "SYNC_STATE",
@@ -678,15 +731,27 @@ export function useTracker() {
 
   // Helper to shout our state changes to other browsers
   const broadcastState = useCallback(
-    (active: boolean, time: number, breakMode: boolean) => {
+    (
+      active: boolean,
+      time: number,
+      breakMode: boolean,
+      wDuration?: number,
+      bDuration?: number
+    ) => {
       if (!user) return
       supabase.channel(`pomo_sync_${user.id}`).send({
         type: "broadcast",
         event: "SYNC_STATE",
-        payload: { isActive: active, timeLeft: time, isBreak: breakMode },
+        payload: {
+          isActive: active,
+          timeLeft: time,
+          isBreak: breakMode,
+          workDuration: wDuration || workDuration,
+          breakDuration: bDuration || breakDuration,
+        },
       })
     },
-    [user]
+    [user, workDuration, breakDuration]
   )
 
   // 3. Timer Engine (Optimized)
@@ -713,35 +778,49 @@ export function useTracker() {
 
       // Auto-switch modes when time is up
       const nextIsBreak = !isPomoBreak
-      const nextTime = nextIsBreak ? BREAK_TIME : WORK_TIME
+      const nextTime = nextIsBreak ? breakDuration : workDuration
 
       setIsPomoBreak(nextIsBreak)
       setPomoTimeLeft(nextTime)
-      broadcastState(false, nextTime, nextIsBreak)
+      broadcastState(false, nextTime, nextIsBreak, workDuration, breakDuration)
     }
-  }, [pomoTimeLeft, isPomoActive, isPomoBreak, playSystemAlarm, broadcastState])
+  }, [
+    pomoTimeLeft,
+    isPomoActive,
+    isPomoBreak,
+    playSystemAlarm,
+    broadcastState,
+    workDuration,
+    breakDuration,
+  ])
 
   // 5. Action Controls
   const togglePomoTimer = () => {
     const newState = !isPomoActive
     setIsPomoActive(newState)
-    broadcastState(newState, pomoTimeLeft, isPomoBreak)
+    broadcastState(
+      newState,
+      pomoTimeLeft,
+      isPomoBreak,
+      workDuration,
+      breakDuration
+    )
   }
 
   const resetPomoTimer = () => {
-    const time = isPomoBreak ? BREAK_TIME : WORK_TIME
+    const time = isPomoBreak ? breakDuration : workDuration
     setIsPomoActive(false)
     setPomoTimeLeft(time)
-    broadcastState(false, time, isPomoBreak)
+    broadcastState(false, time, isPomoBreak, workDuration, breakDuration)
   }
 
   const setPomoMode = (mode: "work" | "break") => {
     const isBreak = mode === "break"
-    const time = isBreak ? BREAK_TIME : WORK_TIME
+    const time = isBreak ? breakDuration : workDuration
     setIsPomoActive(false)
     setIsPomoBreak(isBreak)
     setPomoTimeLeft(time)
-    broadcastState(false, time, isBreak)
+    broadcastState(false, time, isBreak, workDuration, breakDuration)
   }
 
   const formatPomoTime = (seconds: number) => {
@@ -805,5 +884,8 @@ export function useTracker() {
     resetPomoTimer,
     setPomoMode,
     formatPomoTime,
+    workDuration,
+    breakDuration,
+    savePomoSettings,
   }
 }

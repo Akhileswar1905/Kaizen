@@ -18,6 +18,7 @@ import {
   Pause,
   RotateCcw,
   X,
+  Settings,
 } from "lucide-react"
 import { useTracker } from "@/hooks/useTracker"
 import { addDays, subDays, format } from "date-fns"
@@ -32,6 +33,7 @@ import { FinanceView } from "./FinanceView"
 import { SystemDesignHub } from "./SystemDesignTracker"
 import { NotesTracker } from "../Notes"
 import { StatusWindow } from "../Widgets/StatusWindow"
+import { PomodoroSettingsModal } from "../Widgets/Pomodoro Settings"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { WorkoutTracker } from "./WorkoutTracker"
@@ -39,6 +41,7 @@ import { WorkoutTracker } from "./WorkoutTracker"
 export default function KaizenTracker() {
   const [isStatusOpen, setIsStatusOpen] = useState(false)
   const [isStreaksModalOpen, setIsStreaksModalOpen] = useState(false)
+  const [isPomoSettingsOpen, setIsPomoSettingsOpen] = useState(false)
 
   const {
     habits,
@@ -70,6 +73,9 @@ export default function KaizenTracker() {
     resetPomoTimer,
     setPomoMode,
     formatPomoTime,
+    workDuration,
+    breakDuration,
+    savePomoSettings,
   } = useTracker()
 
   // Helper to calculate the current streak for any given habit
@@ -249,9 +255,20 @@ export default function KaizenTracker() {
               <h2 className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
                 Focus Session
               </h2>
-              <span className="text-xs font-medium text-muted-foreground/60">
-                {isPomoActive ? "Running" : "Idle"}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium text-muted-foreground/60">
+                  {isPomoActive ? "Running" : "Idle"}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsPomoSettingsOpen(true)}
+                  className="h-7 w-7 rounded-md text-muted-foreground hover:bg-muted"
+                  title="Pomodoro Settings"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <Card className="relative overflow-hidden border border-border/50 bg-card/60 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-border hover:shadow-md">
@@ -629,6 +646,14 @@ export default function KaizenTracker() {
       )}
 
       {renderContent()}
+
+      <PomodoroSettingsModal
+        isOpen={isPomoSettingsOpen}
+        onClose={() => setIsPomoSettingsOpen(false)}
+        workDuration={workDuration}
+        breakDuration={breakDuration}
+        onSave={savePomoSettings}
+      />
 
       <FloatingMenu
         onOpenDSA={() => setActiveView("dsa")}
