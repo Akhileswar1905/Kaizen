@@ -47,7 +47,7 @@ export const XP_MAPPING: Record<
   REFINEMENT_QUEST_DONE: { xp: 15, stat: "willpower" },
   VARSITY_CHAPTER_COMPLETED: { xp: 30, stat: "intelligence" },
   NOTE_SAVED: { xp: 15, stat: "willpower" },
-  EXERCISE_ADDED: { xp: 0, stat: "strength" },
+  EXERCISE_ADDED: { xp: 0, stat: "strength" }, // Handled dynamically based on workout volume
 }
 
 /**
@@ -77,8 +77,9 @@ export function calculateStatIncrease(event: GamificationEvent): {
   stat: StatType
   value: number
 } {
-  const mapping = XP_MAPPING[event.type]
-  // calculate the xp for exercise added dynamically based on the xp provided in the event
+  const mapping = { ...XP_MAPPING[event.type] } // Shallow clone to prevent global mapping mutation mutations
+
+  // Calculate the XP for exercise added dynamically based on the XP provided in the event
   if (event.type === "EXERCISE_ADDED") {
     mapping.xp = event.amount
   }
@@ -118,6 +119,10 @@ export interface RawVarsityProgress {
 export interface RawNote {
   id: string
 }
+// 1. Added interface to capture the schema coming from your calisthenics_logs table
+export interface RawCalisthenicsLog {
+  xp_earned: number
+}
 
 export interface LogAggregation {
   habitLogs: RawHabitLog[]
@@ -128,6 +133,7 @@ export interface LogAggregation {
   financeLogs: RawFinanceLog[]
   varsityProgress: RawVarsityProgress[]
   notes: RawNote[]
+  calisthenicsLogs: RawCalisthenicsLog[] // 2. Attached calisthenics tracking to the aggregation payload
 }
 
 /**
@@ -204,6 +210,15 @@ export function derivePlayerStats(
     totalXp += xp
     stats[stat] += Math.floor(xp / 10) || 1
   })
+
+  // 3. Process Calisthenics Conditioning Data Streams
+  if (logs.calisthenicsLogs) {
+    logs.calisthenicsLogs.forEach((log) => {
+      const xp = log.xp_earned || 0
+      totalXp += xp
+      stats.strength += Math.floor(xp / 10) || 1
+    })
+  }
 
   // Derive Level and remaining XP
   let level = 1

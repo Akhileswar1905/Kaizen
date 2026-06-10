@@ -198,6 +198,7 @@ export function GamificationProvider({
         financeRes,
         varsityRes,
         notesRes,
+        calisthenicsLogsRes,
       ] = await Promise.all([
         supabase.from("habit_logs").select("*").eq("user_id", userId),
         supabase.from("dsa_completions").select("*").eq("user_id", userId),
@@ -213,6 +214,7 @@ export function GamificationProvider({
         supabase.from("expenses").select("id").eq("user_id", userId),
         supabase.from("varsity_progress").select("*").eq("user_id", userId),
         supabase.from("notes").select("id").eq("user_id", userId),
+        supabase.from("calisthenics_logs").select("*").eq("user_id", userId),
       ])
 
       const aggregation: LogAggregation = {
@@ -224,6 +226,7 @@ export function GamificationProvider({
         financeLogs: financeRes.data || [],
         varsityProgress: varsityRes.data || [],
         notes: notesRes.data || [],
+        calisthenicsLogs: calisthenicsLogsRes.data || [],
       }
 
       let globalStreak = 0
