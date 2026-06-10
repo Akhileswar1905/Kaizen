@@ -2,7 +2,7 @@
   "appId": "com.kaizen.tracker",
   "files": ["dist-electron", "dist-react"],
   "extraResources": ["dist-electron/preload.cjs", "src/assets/**"],
-  "icon": "./desktopIcon.png",
+  "icon": "./image.png",
   "mac": {
     "target": "dmg"
   },
