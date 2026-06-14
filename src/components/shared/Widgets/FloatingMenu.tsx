@@ -169,6 +169,7 @@ export function FloatingMenu({
       <Button
         size="icon"
         className="pointer-events-auto h-14 w-14 rounded-full shadow-xl transition-all duration-300 ease-in-out sm:h-16 sm:w-16"
+        onClick={() => setIsOpen((prev) => !prev)}
       >
         <MenuIcon className="h-6 w-6" />
       </Button>
