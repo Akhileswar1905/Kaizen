@@ -27,8 +27,10 @@ import {
   ChevronRight,
   BarChart3,
   Wallet,
+  Target,
+  AlertCircle,
 } from "lucide-react"
-import { format, subDays } from "date-fns"
+import { format, subDays, startOfMonth, parseISO, isSameMonth } from "date-fns"
 import {
   Select,
   SelectContent,
@@ -38,8 +40,18 @@ import {
 } from "@/components/ui/select"
 import { useGamification } from "@/contexts/GamificationContext"
 
-// Recharts primitives (shadcn wraps these)
-import { PieChart, Pie, AreaChart, Area, XAxis, YAxis } from "recharts"
+// Recharts primitives
+import {
+  PieChart,
+  Pie,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts"
 
 // Shadcn Chart Components
 import {
@@ -58,12 +70,8 @@ const CATEGORIES = [
   "Entertainment",
 ]
 
-// 1. Define the Chart Config for shadcn
 const chartConfig = {
-  amount: {
-    label: "Amount",
-    color: "hsl(var(--chart-1))",
-  },
+  amount: { label: "Amount", color: "hsl(var(--chart-1))" },
   general: { label: "General", color: "hsl(var(--chart-1))" },
   food: { label: "Food", color: "hsl(var(--chart-2))" },
   transport: { label: "Transport", color: "hsl(var(--chart-3))" },
@@ -93,18 +101,31 @@ export function ExpenseTracker() {
   const { user } = useAuth()
   const { triggerGamificationEvent, subtractGamificationPoints } =
     useGamification()
-  const [expenses, setExpenses] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Form State
+  // Data State
+  const [expenses, setExpenses] = useState<any[]>([])
+  const [limits, setLimits] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Form States
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmittingLimit, setIsSubmittingLimit] = useState(false)
+
+  // Expense Form
   const [title, setTitle] = useState("")
   const [amount, setAmount] = useState("")
   const [category, setCategory] = useState("General")
   const [date, setDate] = useState<Date>(new Date())
 
+  // Limit Form
+  const [limitCategory, setLimitCategory] = useState("General")
+  const [limitAmount, setLimitAmount] = useState("")
+
   useEffect(() => {
-    if (user) fetchExpenses()
+    if (user) {
+      fetchExpenses()
+      fetchLimits()
+    }
   }, [user])
 
   const fetchExpenses = async () => {
@@ -116,6 +137,16 @@ export function ExpenseTracker() {
 
     if (!error && data) setExpenses(data)
     setLoading(false)
+  }
+
+  const fetchLimits = async () => {
+    const currentMonthStart = format(startOfMonth(new Date()), "yyyy-MM-dd")
+    const { data, error } = await supabase
+      .from("expense_limits")
+      .select("*")
+      .eq("month_start", currentMonthStart)
+
+    if (!error && data) setLimits(data)
   }
 
   const handleAddExpense = async (e: React.FormEvent) => {
@@ -147,6 +178,51 @@ export function ExpenseTracker() {
     setIsSubmitting(false)
   }
 
+  const handleSetLimit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!limitAmount) return
+    setIsSubmittingLimit(true)
+
+    const currentMonthStart = format(startOfMonth(new Date()), "yyyy-MM-dd")
+    const parsedAmount = parseFloat(limitAmount)
+
+    // Check if limit already exists for this category this month
+    const existingLimit = limits.find(
+      (l) => l.category === limitCategory && l.month_start === currentMonthStart
+    )
+
+    if (existingLimit) {
+      const { data, error } = await supabase
+        .from("expense_limits")
+        .update({ limit_amount: parsedAmount })
+        .eq("id", existingLimit.id)
+        .select()
+        .single()
+
+      if (!error && data) {
+        setLimits(limits.map((l) => (l.id === data.id ? data : l)))
+      }
+    } else {
+      const { data, error } = await supabase
+        .from("expense_limits")
+        .insert({
+          user_id: user?.id,
+          category: limitCategory,
+          month_start: currentMonthStart,
+          limit_amount: parsedAmount,
+        })
+        .select()
+        .single()
+
+      if (!error && data) {
+        setLimits([...limits, data])
+      }
+    }
+
+    setLimitAmount("")
+    setIsSubmittingLimit(false)
+  }
+
   const handleDelete = async (id: string) => {
     setExpenses(expenses.filter((e) => e.id !== id))
     await supabase.from("expenses").delete().match({ id })
@@ -154,6 +230,8 @@ export function ExpenseTracker() {
   }
 
   // --- ANALYTICS COMPUTATIONS ---
+
+  // 1. KPI Totals
   const totalSpent = useMemo(
     () => expenses.reduce((sum, exp) => sum + Number(exp.amount), 0),
     [expenses]
@@ -170,6 +248,41 @@ export function ExpenseTracker() {
       : null
   }, [expenses])
 
+  // 2. Budget & Limits Analysis (Current Month)
+  const budgetAnalysis = useMemo(() => {
+    const currentMonthStart = startOfMonth(new Date())
+    const currentMonthExpenses = expenses.filter((exp) =>
+      isSameMonth(parseISO(exp.date), currentMonthStart)
+    )
+
+    const spentByCategory: Record<string, number> = {}
+    currentMonthExpenses.forEach((exp) => {
+      spentByCategory[exp.category] =
+        (spentByCategory[exp.category] || 0) + Number(exp.amount)
+    })
+
+    return limits
+      .map((limit) => {
+        const spent = spentByCategory[limit.category] || 0
+        const percentage = Math.min((spent / limit.limit_amount) * 100, 100)
+        const remaining = limit.limit_amount - spent
+        let statusColor = "bg-emerald-500"
+        if (percentage > 85) statusColor = "bg-destructive"
+        else if (percentage > 65) statusColor = "bg-amber-500"
+
+        return {
+          category: limit.category,
+          limit: limit.limit_amount,
+          spent,
+          remaining,
+          percentage,
+          statusColor,
+        }
+      })
+      .sort((a, b) => b.percentage - a.percentage)
+  }, [expenses, limits])
+
+  // 3. Category Distribution (Donut)
   const categoryAnalytics = useMemo(() => {
     const totals: Record<string, number> = {}
     expenses.forEach((exp) => {
@@ -179,36 +292,43 @@ export function ExpenseTracker() {
       .map(([name, amount]) => ({
         category: name,
         value: amount,
-        // Map to shadcn CSS variable keys based on the category name
         fill: `var(--chart-${CATEGORIES.indexOf(name) + 1})`,
       }))
       .sort((a, b) => b.value - a.value)
   }, [expenses])
 
+  // 4. Daily Trend
   const dailyTrend = useMemo(() => {
     const days = Array.from({ length: 7 })
-      .map((_, i) => {
-        return format(subDays(new Date(), i), "MMM dd")
-      })
+      .map((_, i) => format(subDays(new Date(), i), "MMM dd"))
       .reverse()
-
     const trendData = days.map((day) => ({ name: day, amount: 0 }))
-
     expenses.forEach((exp) => {
-      const expDate = format(new Date(exp.date), "MMM dd")
+      const expDate = format(parseISO(exp.date), "MMM dd")
       const dayIndex = trendData.findIndex((d) => d.name === expDate)
-      if (dayIndex !== -1) {
-        trendData[dayIndex].amount += Number(exp.amount)
-      }
+      if (dayIndex !== -1) trendData[dayIndex].amount += Number(exp.amount)
     })
-
     return trendData
+  }, [expenses])
+
+  // 5. Monthly Distribution
+  const monthlyDistribution = useMemo(() => {
+    const monthsData: Record<string, number> = {}
+    expenses.forEach((exp) => {
+      const monthKey = format(parseISO(exp.date), "MMM yyyy")
+      monthsData[monthKey] = (monthsData[monthKey] || 0) + Number(exp.amount)
+    })
+    // Convert to array and take last 6 months chronologically
+    return Object.entries(monthsData)
+      .map(([name, amount]) => ({ name, amount }))
+      .reverse()
+      .slice(-6)
   }, [expenses])
 
   // --- RENDER ---
   if (loading)
     return (
-      <div className="mx-auto max-w-5xl animate-pulse space-y-6 p-6">
+      <div className="mx-auto max-w-6xl animate-pulse space-y-6 p-6">
         <div className="h-32 rounded-2xl bg-muted/20" />
         <div className="flex gap-6">
           <div className="h-64 flex-1 rounded-2xl bg-muted/10" />
@@ -218,7 +338,7 @@ export function ExpenseTracker() {
     )
 
   return (
-    <div className="mx-auto max-w-5xl animate-in space-y-6 p-2 duration-700 fade-in sm:p-4">
+    <div className="mx-auto max-w-6xl animate-in space-y-8 p-2 duration-700 fade-in sm:p-6">
       {/* 1. KPI Stats Row */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card className="border-border/50 bg-card/40 backdrop-blur-sm">
@@ -279,13 +399,170 @@ export function ExpenseTracker() {
         </Card>
       </div>
 
-      {/* 2. Analytics Row */}
+      {/* 2. Monthly Budget Tracking */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Trend Area Chart */}
-        <Card className="flex flex-col border-border/50 bg-card/20 lg:col-span-7">
+        <Card className="border-border/50 bg-card/20 lg:col-span-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xs font-bold tracking-wider text-muted-foreground uppercase">
+              <Target className="h-4 w-4" /> Current Month Budget Analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {budgetAnalysis.length === 0 ? (
+              <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+                No limits configured for {format(new Date(), "MMMM")}.
+              </div>
+            ) : (
+              <div className="grid gap-5">
+                {budgetAnalysis.map((budget) => (
+                  <div key={budget.category} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 font-semibold">
+                        {getCategoryIcon(
+                          budget.category,
+                          "h-4 w-4 text-muted-foreground"
+                        )}
+                        {budget.category}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold">
+                          ₹{budget.spent.toLocaleString("en-IN")}
+                        </span>
+                        <span className="text-muted-foreground">
+                          / ₹{budget.limit.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/50">
+                      <div
+                        className={cn(
+                          "h-full transition-all duration-500",
+                          budget.statusColor
+                        )}
+                        style={{ width: `${budget.percentage}%` }}
+                      />
+                    </div>
+                    {budget.remaining < 0 && (
+                      <p className="flex items-center gap-1.5 text-xs font-medium text-destructive">
+                        <AlertCircle className="h-3 w-3" /> Over budget by ₹
+                        {Math.abs(budget.remaining).toLocaleString("en-IN")}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50 bg-card/20 lg:col-span-4">
+          <CardHeader>
+            <CardTitle className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+              Set Category Limit
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSetLimit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="ml-1 text-[10px] font-bold tracking-tighter text-muted-foreground uppercase">
+                  Category
+                </label>
+                <Select value={limitCategory} onValueChange={setLimitCategory}>
+                  <SelectTrigger className="bg-background/50 focus:ring-1 focus:ring-primary">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="ml-1 text-[10px] font-bold tracking-tighter text-muted-foreground uppercase">
+                  Limit Amount (₹)
+                </label>
+                <Input
+                  type="number"
+                  value={limitAmount}
+                  onChange={(e) => setLimitAmount(e.target.value)}
+                  placeholder="e.g. 5000"
+                  className="bg-background/50 font-mono focus-visible:ring-1 focus-visible:ring-primary"
+                  required
+                />
+              </div>
+              <Button
+                disabled={isSubmittingLimit}
+                type="submit"
+                variant="secondary"
+                className="w-full font-bold"
+              >
+                {isSubmittingLimit ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Save Limit"
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 3. Analytics Charts */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Monthly Distribution Chart */}
+        <Card className="flex flex-col border-border/50 bg-card/20 lg:col-span-4">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-              <BarChart3 className="h-4 w-4" /> 7-Day Trend
+              <BarChart3 className="h-4 w-4" /> Monthly Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="min-h-[250px] flex-1 p-4">
+            <ChartContainer config={chartConfig} className="h-[250px] w-full">
+              <BarChart
+                data={monthlyDistribution}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid
+                  vertical={false}
+                  stroke="hsl(var(--muted))"
+                  strokeDasharray="3 3"
+                />
+                <XAxis
+                  dataKey="name"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  stroke="hsl(var(--muted-foreground))"
+                />
+                <YAxis
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  stroke="hsl(var(--muted-foreground))"
+                  tickFormatter={(val) => `₹${val}`}
+                />
+                <ChartTooltip
+                  cursor={{ fill: "hsl(var(--muted)/0.4)" }}
+                  content={<ChartTooltipContent />}
+                />
+                <Bar
+                  dataKey="amount"
+                  fill="var(--chart-2)"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* 7-Day Trend Area Chart */}
+        <Card className="flex flex-col border-border/50 bg-card/20 lg:col-span-5">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-xs font-bold tracking-wider text-muted-foreground uppercase">
+              <TrendingUp className="h-4 w-4" /> 7-Day Velocity
             </CardTitle>
           </CardHeader>
           <CardContent className="min-h-[250px] flex-1 p-4">
@@ -339,10 +616,10 @@ export function ExpenseTracker() {
         </Card>
 
         {/* Category Donut Chart */}
-        <Card className="flex flex-col border-border/50 bg-card/20 lg:col-span-5">
+        <Card className="flex flex-col border-border/50 bg-card/20 lg:col-span-3">
           <CardHeader className="pb-0">
             <CardTitle className="flex items-center gap-2 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-              <PieChartIcon className="h-4 w-4" /> Distribution
+              <PieChartIcon className="h-4 w-4" /> Split
             </CardTitle>
           </CardHeader>
           <CardContent className="relative flex min-h-[250px] flex-1 items-center justify-center">
@@ -370,7 +647,6 @@ export function ExpenseTracker() {
                     />
                   </PieChart>
                 </ChartContainer>
-                {/* Center text for donut */}
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
                     Total
@@ -392,7 +668,7 @@ export function ExpenseTracker() {
         </Card>
       </div>
 
-      {/* 3. Input Form */}
+      {/* 4. Input Form */}
       <Card className="border-border/40 bg-card/50 backdrop-blur-xl">
         <CardContent className="p-6">
           <form
@@ -486,7 +762,7 @@ export function ExpenseTracker() {
         </CardContent>
       </Card>
 
-      {/* 4. Ledger List */}
+      {/* 5. Ledger List */}
       <div className="space-y-4 pt-4">
         <h3 className="flex items-center gap-2 text-xs font-bold tracking-widest text-muted-foreground uppercase">
           <ChevronRight className="h-3 w-3" /> Recent Transactions
@@ -512,7 +788,7 @@ export function ExpenseTracker() {
                   </p>
                   <p className="flex items-center gap-1.5 text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
                     {expense.category} •{" "}
-                    {format(new Date(expense.date), "MMM d, yyyy")}
+                    {format(parseISO(expense.date), "MMM d, yyyy")}
                   </p>
                 </div>
               </div>

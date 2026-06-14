@@ -129,7 +129,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply min-h-dvh overflow-x-hidden bg-background text-foreground antialiased;
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
@@ -137,6 +137,14 @@
   }
   html {
     @apply font-sans;
+  }
+  @supports (-webkit-touch-callout: none) {
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-right: env(safe-area-inset-right);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+    }
   }
 }
 

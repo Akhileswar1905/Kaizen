@@ -45,15 +45,15 @@ export function FloatingMenu({
   return (
     <div
       ref={menuRef}
-      className="fixed right-6 bottom-6 z-50 flex flex-col items-end gap-3"
+      className="pointer-events-none fixed right-4 bottom-4 z-50 flex flex-col items-end gap-3 sm:right-6 sm:bottom-6"
     >
       {/* Expanded Menu Stack */}
       <div
         className={cn(
-          "flex origin-bottom flex-col items-end gap-3 transition-all duration-300 ease-out",
+          "pointer-events-none flex origin-bottom flex-col items-end gap-3 transition-all duration-300 ease-out",
           isOpen
             ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-            : "pointer-events-none translate-y-4 scale-75 opacity-0"
+            : "translate-y-4 scale-75 opacity-0"
         )}
       >
         {/* Option 1: DSA Problemsheet */}
@@ -168,13 +168,7 @@ export function FloatingMenu({
       {/* Main Trigger FAB */}
       <Button
         size="icon"
-        className={cn(
-          "h-14 w-14 rounded-full shadow-xl transition-all duration-300 ease-in-out",
-          isOpen
-            ? "text-destructive-foreground rotate-45 bg-destructive hover:bg-destructive/90"
-            : "bg-primary text-primary-foreground hover:scale-105 hover:bg-primary/90"
-        )}
-        onClick={() => setIsOpen(!isOpen)}
+        className="pointer-events-auto h-14 w-14 rounded-full shadow-xl transition-all duration-300 ease-in-out sm:h-16 sm:w-16"
       >
         <MenuIcon className="h-6 w-6" />
       </Button>

@@ -19,6 +19,7 @@ import {
   RotateCcw,
   X,
   Settings,
+  Users,
 } from "lucide-react"
 import { useTracker } from "@/hooks/useTracker"
 import { addDays, subDays, format } from "date-fns"
@@ -42,6 +43,7 @@ export default function KaizenTracker() {
   const [isStatusOpen, setIsStatusOpen] = useState(false)
   const [isStreaksModalOpen, setIsStreaksModalOpen] = useState(false)
   const [isPomoSettingsOpen, setIsPomoSettingsOpen] = useState(false)
+  const [isMultiplayerOpen, setIsMultiplayerOpen] = useState(false)
 
   const {
     habits,
@@ -134,10 +136,10 @@ export default function KaizenTracker() {
       return <WorkoutTracker onBack={() => setActiveView("dashboard")} />
     }
     return (
-      <div className="flex min-h-screen justify-center bg-background/50 px-4 py-8 font-sans text-foreground antialiased md:px-12 md:py-14">
-        <div className="w-full max-w-4xl space-y-10">
+      <div className="flex min-h-screen justify-center bg-background/50 px-3 py-6 font-sans text-foreground antialiased sm:px-6 sm:py-10 md:px-12 md:py-14">
+        <div className="w-full max-w-4xl space-y-8 sm:space-y-10">
           {/* Header Section */}
-          <header className="flex flex-col gap-6 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
+          <header className="flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
             {/* Left Column: Branding */}
             <div className="flex items-center gap-4">
               <div className="group relative">
@@ -190,9 +192,19 @@ export default function KaizenTracker() {
                   variant="outline"
                   size="icon"
                   onClick={() => setIsStatusOpen(true)}
-                  className="border-white-500/30 h-10 w-10 shrink-0 rounded-full shadow-sm transition-all hover:bg-blue-500/10"
+                  className="h-10 w-10 shrink-0 rounded-full border-border/50 bg-card/60 shadow-sm transition-all hover:bg-blue-500/10"
+                  title="Status"
                 >
                   <UserCircle className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsMultiplayerOpen(true)}
+                  className="h-10 w-10 shrink-0 rounded-full border-border/50 bg-card/60 shadow-sm transition-all hover:bg-blue-500/10"
+                  title="Multiplayer"
+                >
+                  <Users className="h-5 w-5" />
                 </Button>
                 <div className="flex-1 sm:flex-none">
                   <AddHabitModal onAddHabit={addHabit} />
@@ -580,6 +592,52 @@ export default function KaizenTracker() {
         onClose={() => setIsStatusOpen(false)}
         stats={playerStats}
       />
+
+      {/* Multiplayer Status Dialog */}
+      {isMultiplayerOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-background/60 p-4 backdrop-blur-sm sm:items-center">
+          <div className="w-full max-w-md overflow-hidden rounded-3xl border border-border/50 bg-card/90 p-6 shadow-2xl backdrop-blur-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-black tracking-tight">
+                  Multiplayer Mode
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Create a private room and invite friends to share live habits,
+                  expenses, and notes.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMultiplayerOpen(false)}
+                className="h-8 w-8 shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              <div className="rounded-2xl border border-border/50 bg-background/50 p-4">
+                <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                  Room ID
+                </p>
+                <p className="mt-2 font-mono text-xl font-black">
+                  KAIZEN-ROOM-01
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Supabase Realtime will connect users to the same room.
+                </p>
+              </div>
+
+              <Button className="w-full">Create / Join Room</Button>
+              <Button variant="outline" className="w-full">
+                Copy Invite Link
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Habit Streaks Custom Modal (Matches Theme Perfectly) */}
       {isStreaksModalOpen && (

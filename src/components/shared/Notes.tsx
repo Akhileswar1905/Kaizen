@@ -3,9 +3,8 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
-import ReactMarkdown from "react-markdown"
+import { RichTextEditor } from "./RichTextEditor" // Make sure this path is correct
 import {
   Loader2,
   Plus,
@@ -22,12 +21,22 @@ import {
   CheckCircle2,
   Clock,
   SaveAll,
+  Folder,
+  FolderPlus,
+  PlusCircle,
+  Tag,
 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { useGamification } from "@/contexts/GamificationContext"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-const TAGS = ["General", "Work", "Ideas", "Personal", "Study"]
 const DRAFT_KEY = "study_studio_local_draft"
 
 interface NotesTrackerProps {
@@ -38,30 +47,49 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
   const { user } = useAuth()
   const { triggerGamificationEvent, subtractGamificationPoints } =
     useGamification()
+
   const [notes, setNotes] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+  const [folders, setFolders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Core Application Workspace State
   const [selectedNote, setSelectedNote] = useState<any | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [workspaceMode, setWorkspaceMode] = useState<"edit" | "preview">(
+    "preview"
+  )
 
   // Form State
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [selectedTag, setSelectedTag] = useState("General")
-  const [workspaceMode, setWorkspaceMode] = useState<"edit" | "preview">("edit")
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
+
+  // Dynamic Creation State
+  const [isAddingCategory, setIsAddingCategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState("")
+  const [isAddingFolder, setIsAddingFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState("")
 
   // Filter State
   const [searchQuery, setSearchQuery] = useState("")
   const [activeFilterTag, setActiveFilterTag] = useState("All")
+  const [activeFilterFolder, setActiveFilterFolder] = useState<string | null>(
+    null
+  )
 
   // Draft State
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null)
   const [hasAvailableDraft, setHasAvailableDraft] = useState(false)
 
   useEffect(() => {
-    if (user) fetchNotes()
+    if (user) {
+      fetchNotes()
+      fetchCategories()
+      fetchFolders()
+    }
     checkExistingDraft()
   }, [user])
 
@@ -73,21 +101,27 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
           title,
           content,
           tag: selectedTag,
+          folderId: selectedFolderId,
           noteId: selectedNote?.id || null,
           timestamp: new Date().toISOString(),
         }
         localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData))
         setDraftSavedAt(new Date())
-      }, 1500) // Auto-save after 1.5s of inactivity
+      }, 1500)
       return () => clearTimeout(timer)
     }
-  }, [title, content, selectedTag, workspaceMode, selectedNote])
+  }, [
+    title,
+    content,
+    selectedTag,
+    selectedFolderId,
+    workspaceMode,
+    selectedNote,
+  ])
 
   const checkExistingDraft = () => {
     const savedDraft = localStorage.getItem(DRAFT_KEY)
-    if (savedDraft) {
-      setHasAvailableDraft(true)
-    }
+    if (savedDraft) setHasAvailableDraft(true)
   }
 
   const loadDraft = useCallback(() => {
@@ -97,6 +131,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
       setTitle(draft.title)
       setContent(draft.content)
       setSelectedTag(draft.tag)
+      setSelectedFolderId(draft.folderId)
       setIsEditing(true)
       setWorkspaceMode("edit")
       setSelectedNote(notes.find((n) => n.id === draft.noteId) || null)
@@ -110,6 +145,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     setHasAvailableDraft(false)
   }
 
+  // --- API Methods ---
   const fetchNotes = async (selectId?: string) => {
     const { data, error } = await supabase
       .from("notes")
@@ -130,12 +166,61 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     setLoading(false)
   }
 
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from("note_categories")
+      .select("*")
+      .order("name")
+    if (!error && data) setCategories(data)
+  }
+
+  const fetchFolders = async () => {
+    const { data, error } = await supabase
+      .from("note_folders")
+      .select("*")
+      .order("created_at")
+    if (!error && data) setFolders(data)
+  }
+
+  const handleAddFolder = async () => {
+    if (!newFolderName.trim()) return
+    const { data, error } = await supabase
+      .from("note_folders")
+      .insert([{ name: newFolderName.trim(), user_id: user?.id }])
+      .select()
+      .single()
+
+    if (!error && data) {
+      setFolders([...folders, data])
+      setNewFolderName("")
+      setIsAddingFolder(false)
+    }
+  }
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) return
+    const { data, error } = await supabase
+      .from("note_categories")
+      .insert([{ name: newCategoryName.trim(), user_id: user?.id }])
+      .select()
+      .single()
+
+    if (!error && data) {
+      setCategories([...categories, data])
+      setSelectedTag(data.name)
+      setNewCategoryName("")
+      setIsAddingCategory(false)
+    }
+  }
+
+  // --- UI Handlers ---
   const handleSelectNote = (note: any) => {
     setSelectedNote(note)
     setIsEditing(false)
     setTitle(note.title)
     setContent(note.content)
     setSelectedTag(note.tag)
+    setSelectedFolderId(note.folder_id || null)
     setWorkspaceMode("preview")
   }
 
@@ -144,7 +229,8 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     setIsEditing(true)
     setTitle("")
     setContent("")
-    setSelectedTag("General")
+    setSelectedTag(categories.length > 0 ? categories[0].name : "General")
+    setSelectedFolderId(activeFilterFolder) // Default to currently viewed folder
     setWorkspaceMode("edit")
   }
 
@@ -158,6 +244,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
       title: title.trim(),
       content: content.trim(),
       tag: selectedTag,
+      folder_id: selectedFolderId,
     }
 
     if (selectedNote?.id) {
@@ -167,7 +254,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
         .eq("id", selectedNote.id)
         .select()
         .single()
-
       if (!error && data) {
         setNotes(notes.map((n) => (n.id === data.id ? data : n)))
         setSelectedNote(data)
@@ -179,7 +265,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
         .insert(payload)
         .select()
         .single()
-
       if (!error && data) {
         setNotes([data, ...notes])
         setSelectedNote(data)
@@ -187,7 +272,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
       }
     }
 
-    // Clear draft upon successful save
     clearDraft()
     setIsEditing(false)
     setWorkspaceMode("preview")
@@ -200,11 +284,8 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     setNotes(remainingNotes)
 
     if (selectedNote?.id === id) {
-      if (remainingNotes.length > 0) {
-        handleSelectNote(remainingNotes[0])
-      } else {
-        handleInitNewNote()
-      }
+      if (remainingNotes.length > 0) handleSelectNote(remainingNotes[0])
+      else handleInitNewNote()
     }
     await supabase.from("notes").delete().match({ id })
     await subtractGamificationPoints({ type: "NOTE_SAVED", amount: 1 })
@@ -214,20 +295,22 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     return notes.filter((note) => {
       const matchesTag =
         activeFilterTag === "All" || note.tag === activeFilterTag
+      const matchesFolder =
+        activeFilterFolder === null || note.folder_id === activeFilterFolder
       const matchesSearch =
         note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         note.content.toLowerCase().includes(searchQuery.toLowerCase())
-      return matchesTag && matchesSearch
+      return matchesTag && matchesFolder && matchesSearch
     })
-  }, [notes, activeFilterTag, searchQuery])
+  }, [notes, activeFilterTag, activeFilterFolder, searchQuery])
 
   if (loading) {
     return (
       <div className="mx-auto max-w-6xl space-y-6 p-6">
         <div className="h-16 w-full animate-pulse rounded-2xl border border-border/20 bg-muted/10" />
         <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
-          <div className="h-137.5 animate-pulse rounded-2xl border border-border/20 bg-muted/5 md:col-span-4" />
-          <div className="h-137.5 animate-pulse rounded-2xl border border-border/20 bg-muted/5 md:col-span-8" />
+          <div className="h-[500px] animate-pulse rounded-2xl border border-border/20 bg-muted/5 md:col-span-4" />
+          <div className="h-[500px] animate-pulse rounded-2xl border border-border/20 bg-muted/5 md:col-span-8" />
         </div>
       </div>
     )
@@ -235,7 +318,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
 
   return (
     <div className="mx-auto max-w-6xl animate-in space-y-6 p-4 text-foreground duration-500 fade-in slide-in-from-bottom-4 selection:bg-primary/20 sm:p-6 md:p-8">
-      {/* Premium Dashboard Navigation */}
+      {/* Header */}
       <header className="flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Button
@@ -283,10 +366,84 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
         </div>
       </header>
 
-      {/* Primary Workspace Architecture */}
+      {/* Primary Workspace */}
       <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-12">
-        {/* LEFT COLUMN: Ledger Navigation & Search Deck */}
+        {/* LEFT COLUMN: Ledger Navigation */}
         <div className="space-y-5 md:col-span-4">
+          {/* Folders List */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[10px] font-extrabold tracking-widest text-muted-foreground uppercase">
+                Vault Directories
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsAddingFolder(true)}
+                className="h-6 w-6 rounded-full hover:bg-primary/10 hover:text-primary"
+              >
+                <FolderPlus className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+
+            {isAddingFolder && (
+              <div className="flex animate-in gap-2 fade-in slide-in-from-top-2">
+                <Input
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="Folder name..."
+                  className="h-8 border-border/50 bg-background/50 text-xs focus-visible:ring-1 focus-visible:ring-primary"
+                  autoFocus
+                />
+                <Button
+                  size="sm"
+                  onClick={handleAddFolder}
+                  className="h-8 px-2"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsAddingFolder(false)}
+                  className="h-8 px-2"
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <button
+                onClick={() => setActiveFilterFolder(null)}
+                className={cn(
+                  "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all",
+                  activeFilterFolder === null
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted/60"
+                )}
+              >
+                <Inbox className="h-4 w-4" />
+                All Notes
+              </button>
+              {folders.map((folder) => (
+                <button
+                  key={folder.id}
+                  onClick={() => setActiveFilterFolder(folder.id)}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all",
+                    activeFilterFolder === folder.id
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-muted/60"
+                  )}
+                >
+                  <Folder className="h-4 w-4" />
+                  {folder.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex flex-col gap-3 rounded-2xl border border-border/40 bg-card/40 p-4 shadow-sm backdrop-blur-md">
             <div className="group relative">
               <Search className="absolute top-3 left-3.5 h-4 w-4 text-muted-foreground/50 transition-colors group-focus-within:text-primary" />
@@ -299,14 +456,14 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
             </div>
 
             <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
-              {["All", ...TAGS].map((tag) => (
+              {["All", ...categories.map((c) => c.name)].map((tag) => (
                 <button
                   key={tag}
                   onClick={() => setActiveFilterTag(tag)}
                   className={cn(
                     "shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all",
                     activeFilterTag === tag
-                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      ? "border-primary bg-primary/10 text-primary shadow-sm"
                       : "border-border/40 bg-background/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                   )}
                 >
@@ -330,6 +487,11 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
             ) : (
               filteredNotes.map((note) => {
                 const isCurrent = selectedNote?.id === note.id && !isEditing
+                // Clean HTML for preview
+                const plainTextPreview = note.content
+                  .replace(/<[^>]+>/g, "")
+                  .substring(0, 100)
+
                 return (
                   <div
                     key={note.id}
@@ -354,7 +516,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                           {note.title || "Untitled Fragment"}
                         </h4>
                         <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground/70">
-                          {note.content.replace(/[#*`\-]/g, "")}
+                          {plainTextPreview}
                         </p>
                       </div>
                       <span className="shrink-0 rounded-md border border-border/50 bg-muted/80 px-2 py-1 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
@@ -383,7 +545,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
 
         {/* RIGHT COLUMN: Interactive Study Workspace Engine */}
         <div className="md:col-span-8">
-          <Card className="flex min-h-200 flex-col overflow-hidden rounded-3xl border border-border/40 bg-card/40 shadow-lg backdrop-blur-xl transition-all duration-500 focus-within:border-primary/30 focus-within:shadow-xl focus-within:shadow-primary/5">
+          <Card className="flex min-h-[600px] flex-col overflow-hidden rounded-3xl border border-border/40 bg-card/40 shadow-lg backdrop-blur-xl transition-all duration-500 focus-within:border-primary/30 focus-within:shadow-xl focus-within:shadow-primary/5">
             {/* Control Bar */}
             <div className="flex items-center justify-between border-b border-border/30 bg-muted/20 px-5 py-4 sm:px-6">
               <div className="flex items-center gap-3">
@@ -399,7 +561,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                   {isEditing ? "Compilation Mode" : "Knowledge Base Viewer"}
                 </span>
 
-                {/* Draft Auto-Save Indicator */}
                 {isEditing && draftSavedAt && (
                   <span className="ml-2 hidden animate-in items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[10px] font-medium text-muted-foreground fade-in sm:flex">
                     <Clock className="h-3 w-3" />
@@ -413,7 +574,10 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setIsEditing(true)}
+                    onClick={() => {
+                      setIsEditing(true)
+                      setWorkspaceMode("edit")
+                    }}
                     className="h-9 gap-2 rounded-xl border-border/60 px-4 text-xs font-bold hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
                   >
                     <Edit3 className="h-4 w-4" />
@@ -465,7 +629,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                   <div className="flex flex-1 flex-col space-y-6">
                     <div className="space-y-2">
                       <Input
-                        placeholder="System Title (e.g., CAP Theorem, Event-Driven Architectures...)"
+                        placeholder="System Title (e.g., CAP Theorem...)"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         className="h-auto rounded-none border-0 border-b border-border/30 bg-transparent px-1 py-2 text-2xl font-black tracking-tight transition-colors placeholder:text-muted-foreground/30 focus-visible:border-primary/50 focus-visible:ring-0 sm:p-2 sm:text-3xl"
@@ -475,45 +639,112 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
 
                     <div className="group relative flex flex-1 flex-col">
                       {workspaceMode === "edit" ? (
-                        <>
-                          <Textarea
-                            placeholder="Structure your notes utilizing Markdown..."
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            className="flex-1 resize-none border-0 bg-transparent px-1 py-2 font-serif text-base leading-relaxed text-foreground/90 placeholder:font-sans placeholder:text-muted-foreground/30 focus-visible:ring-0 sm:p-2"
-                            required
-                          />
-                          <div className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-br from-primary/2 via-transparent to-transparent opacity-0 blur-2xl transition-opacity duration-500 group-focus-within:opacity-100" />
-                        </>
+                        <RichTextEditor value={content} onChange={setContent} />
                       ) : (
                         <div className="markdown-preview flex-1 overflow-y-auto px-2 text-base leading-relaxed wrap-break-word">
-                          <ReactMarkdown>{content}</ReactMarkdown>
+                          <div dangerouslySetInnerHTML={{ __html: content }} />
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="mt-8 flex flex-col gap-4 border-t border-border/30 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-2">
-                      <span className="block text-[10px] font-extrabold tracking-widest text-muted-foreground uppercase">
-                        Vault Cataloging Tag
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {TAGS.map((tag) => (
-                          <button
+                  <div className="mt-8 flex flex-col gap-6 border-t border-border/30 pt-6 sm:flex-row sm:items-start sm:justify-between">
+                    {/* Metadata Selection */}
+                    <div className="flex flex-wrap gap-4 sm:gap-8">
+                      {/* Folder Selection */}
+                      <div className="space-y-2">
+                        <span className="block text-[10px] font-extrabold tracking-widest text-muted-foreground uppercase">
+                          Directory
+                        </span>
+                        <Select
+                          value={selectedFolderId || "none"}
+                          onValueChange={(v) =>
+                            setSelectedFolderId(v === "none" ? null : v)
+                          }
+                        >
+                          <SelectTrigger className="h-9 w-[180px] border-border/40 bg-background/50 text-xs font-semibold">
+                            <SelectValue placeholder="Select Folder" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none" className="text-xs">
+                              <Folder className="mr-2 inline h-3 w-3 opacity-50" />{" "}
+                              No Folder
+                            </SelectItem>
+                            {folders.map((f) => (
+                              <SelectItem
+                                key={f.id}
+                                value={f.id}
+                                className="text-xs"
+                              >
+                                <Folder className="mr-2 inline h-3 w-3 text-primary" />{" "}
+                                {f.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Tag Selection */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="block text-[10px] font-extrabold tracking-widest text-muted-foreground uppercase">
+                            Primary Tag
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             type="button"
-                            key={tag}
-                            onClick={() => setSelectedTag(tag)}
-                            className={cn(
-                              "rounded-lg border px-3 py-1.5 text-xs font-bold transition-all",
-                              selectedTag === tag
-                                ? "border-primary bg-primary/10 text-primary shadow-sm"
-                                : "border-border/40 bg-background/50 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                            )}
+                            onClick={() =>
+                              setIsAddingCategory(!isAddingCategory)
+                            }
+                            className="h-5 w-5 rounded-full hover:bg-primary/10 hover:text-primary"
                           >
-                            {tag}
-                          </button>
-                        ))}
+                            <PlusCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+
+                        {isAddingCategory ? (
+                          <div className="flex gap-2">
+                            <Input
+                              value={newCategoryName}
+                              onChange={(e) =>
+                                setNewCategoryName(e.target.value)
+                              }
+                              placeholder="Tag name..."
+                              className="h-9 w-[140px] bg-background/50 text-xs"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              type="button"
+                              onClick={handleAddCategory}
+                              className="h-9 px-3 text-xs"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Select
+                            value={selectedTag}
+                            onValueChange={setSelectedTag}
+                          >
+                            <SelectTrigger className="h-9 w-[180px] border-border/40 bg-background/50 text-xs font-semibold">
+                              <SelectValue placeholder="Select Tag" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categories.map((c) => (
+                                <SelectItem
+                                  key={c.id}
+                                  value={c.name}
+                                  className="text-xs"
+                                >
+                                  <Tag className="mr-2 inline h-3 w-3 text-primary/70" />{" "}
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                       </div>
                     </div>
 
@@ -549,7 +780,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                   </div>
                 </form>
               ) : (
-                /* PREVIEW/STUDY VIEW MODE */
+                /* PREVIEW VIEW MODE */
                 <div className="flex flex-1 flex-col space-y-6 p-6 select-text sm:p-10">
                   {selectedNote ? (
                     <>
@@ -558,6 +789,14 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                           <span className="rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1 text-[10px] font-black tracking-widest text-primary uppercase shadow-sm">
                             {selectedNote.tag}
                           </span>
+                          {selectedNote.folder_id && (
+                            <span className="flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/40 px-2.5 py-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                              <Folder className="h-3 w-3" />
+                              {folders.find(
+                                (f) => f.id === selectedNote.folder_id
+                              )?.name || "Folder"}
+                            </span>
+                          )}
                           <div className="flex items-center gap-1.5 font-mono text-xs font-medium text-muted-foreground/60">
                             <Calendar className="h-3.5 w-3.5" />
                             Compiled{" "}
@@ -571,10 +810,12 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                           {selectedNote.title}
                         </h2>
                       </div>
-
-                      {/* Full-Scale Fluid Technical Text Engine */}
                       <div className="markdown-preview max-h-[60vh] flex-1 overflow-y-auto pr-2 text-base leading-relaxed font-medium text-foreground/90">
-                        <ReactMarkdown>{selectedNote.content}</ReactMarkdown>
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: selectedNote.content,
+                          }}
+                        />
                       </div>
                     </>
                   ) : (
@@ -607,7 +848,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
         </div>
       </div>
 
-      {/* Global CSS Typography Engine for Knowledge Base Text Structures */}
       <style>{`
         .markdown-preview h1 { font-size: 1.75rem; font-weight: 900; margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--foreground); letter-spacing: -0.03em; border-b: 1px solid hsl(var(--border)/0.4); padding-bottom: 0.5rem; }
         .markdown-preview h2 { font-size: 1.4rem; font-weight: 800; margin-top: 1.25rem; margin-bottom: 0.5rem; color: var(--foreground); letter-spacing: -0.02em; }
