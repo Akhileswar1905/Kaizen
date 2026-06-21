@@ -20,6 +20,7 @@ import {
   X,
   Settings,
   Users,
+  Snowflake, // Added Snowflake icon for the streak freeze
 } from "lucide-react"
 import { useTracker } from "@/hooks/useTracker"
 import { addDays, subDays, format } from "date-fns"
@@ -67,7 +68,6 @@ export default function KaizenTracker() {
     activeView,
     setActiveView,
     playerStats,
-    // POMODORO STATE DESTRUCTURED FROM HOOK
     pomoTimeLeft,
     isPomoActive,
     isPomoBreak,
@@ -80,55 +80,87 @@ export default function KaizenTracker() {
     savePomoSettings,
   } = useTracker()
 
-  // Helper to calculate the current streak for any given habit
-  const getHabitStreak = (habitId: string) => {
+  // NEW LOGIC: Advanced streak calculator with 21-day Streak Freeze
+  const getHabitStreakDetails = (habitId: string) => {
     let streak = 0
+    let freezeUsed = false
+    let frozenDateStr: string | null = null // Track the exact frozen date
     let currentDate = new Date()
 
-    // Check today first
+    // 1. Grace period: Check if today is logged
     let dateStr = format(currentDate, "yyyy-MM-dd")
-    if (logs[`${habitId}-${dateStr}`]) {
-      streak++
+    if (!logs[`${habitId}-${dateStr}`]) {
       currentDate = subDays(currentDate, 1)
-    } else {
-      // Grace period: If today isn't logged, check yesterday. If yesterday is logged, the streak is still alive.
-      currentDate = subDays(currentDate, 1)
-      dateStr = format(currentDate, "yyyy-MM-dd")
-      if (!logs[`${habitId}-${dateStr}`]) {
-        return 0 // Neither today nor yesterday logged, streak is 0
-      }
     }
 
-    // Keep counting backwards continuously until a day is missed
+    // 2. Iterate backward through history
     while (true) {
       dateStr = format(currentDate, "yyyy-MM-dd")
       if (logs[`${habitId}-${dateStr}`]) {
         streak++
         currentDate = subDays(currentDate, 1)
       } else {
-        break
+        // Missed a day! Can we apply a Streak Freeze?
+        if (!freezeUsed) {
+          let tempDate = subDays(currentDate, 1)
+          let historicalStreak = 0
+
+          // Calculate the historical contiguous streak BEFORE this missed day
+          while (true) {
+            let tempStr = format(tempDate, "yyyy-MM-dd")
+            if (logs[`${habitId}-${tempStr}`]) {
+              historicalStreak++
+              tempDate = subDays(tempDate, 1)
+            } else {
+              break
+            }
+          }
+
+          // If the user maintained at least a 21-day streak, trigger the freeze for 1 day
+          if (historicalStreak >= 21) {
+            freezeUsed = true
+            frozenDateStr = dateStr // Remember which date was saved by the freeze
+            streak += historicalStreak // Bridge the streak
+            currentDate = tempDate // Skip past the historical streak
+          } else {
+            break // Not enough days maintained for a freeze; streak breaks
+          }
+        } else {
+          break // Missed multiple days, or freeze already consumed
+        }
       }
     }
-    return streak
+
+    return { streak, freezeUsed, frozenDateStr }
   }
+
+  // Wrapper helper to keep the sort logic working simply
+  const getHabitStreak = (habitId: string) =>
+    getHabitStreakDetails(habitId).streak
+
+  // Calculate the Highest Active Streak for the KPI Card
+  const highestActiveStreak =
+    habits.filter((h) => !h.is_archived).length > 0
+      ? Math.max(
+          ...habits
+            .filter((h) => !h.is_archived)
+            .map((h) => getHabitStreak(h.id))
+        )
+      : 0
 
   const renderContent = () => {
     if (activeView === "dsa") {
       return <DsaSheet onBack={() => setActiveView("dashboard")} />
     }
-
     if (activeView === "journal") {
       return <JournalView onBack={() => setActiveView("dashboard")} />
     }
-
     if (activeView === "finance") {
       return <FinanceView onBack={() => setActiveView("dashboard")} />
     }
-
     if (activeView === "system-design") {
       return <SystemDesignHub onBack={() => setActiveView("dashboard")} />
     }
-
     if (activeView === "notes") {
       return <NotesTracker onBack={() => setActiveView("dashboard")} />
     }
@@ -162,7 +194,6 @@ export default function KaizenTracker() {
 
             {/* Right Column: Dynamic Action Control Deck */}
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
-              {/* Date Pagination Controls */}
               <div className="flex flex-1 items-center justify-between rounded-xl border border-border/60 bg-card/40 p-1.5 shadow-sm backdrop-blur-sm sm:flex-initial sm:gap-2">
                 <Button
                   variant="ghost"
@@ -224,8 +255,8 @@ export default function KaizenTracker() {
                   "text-emerald-500 bg-emerald-500/5 border-emerald-500/10",
               },
               {
-                label: "Habit Streaks",
-                value: dsaStreak,
+                label: "Highest Streak", // Changed label to be more generic
+                value: highestActiveStreak, // Replaced dsaStreak with dynamic calculation
                 icon: Flame,
                 color: "text-orange-500 bg-orange-500/5 border-orange-500/10",
                 onClick: () => setIsStreaksModalOpen(true),
@@ -285,7 +316,6 @@ export default function KaizenTracker() {
 
             <Card className="relative overflow-hidden border border-border/50 bg-card/60 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-border hover:shadow-md">
               <CardContent className="flex flex-col items-center justify-center p-8 sm:p-10">
-                {/* Mode Selector */}
                 <div className="mb-6 flex gap-2 rounded-full border border-border/50 bg-muted/40 p-1 backdrop-blur-sm">
                   <button
                     onClick={() => setPomoMode("work")}
@@ -311,12 +341,10 @@ export default function KaizenTracker() {
                   </button>
                 </div>
 
-                {/* Timer Display */}
                 <div className="mb-8 font-mono text-6xl font-black tracking-tighter text-foreground sm:text-8xl">
                   {formatPomoTime(pomoTimeLeft)}
                 </div>
 
-                {/* Controls */}
                 <div className="flex items-center gap-3">
                   <Button
                     onClick={togglePomoTimer}
@@ -379,6 +407,7 @@ export default function KaizenTracker() {
               habits
                 .filter((habit) => !habit.is_archived)
                 .map((habit) => {
+                  const { frozenDateStr } = getHabitStreakDetails(habit.id)
                   const completedCount = currentWeekDays.reduce(
                     (count, date) => {
                       const dateStr = format(date, "yyyy-MM-dd")
@@ -399,7 +428,6 @@ export default function KaizenTracker() {
                       )}
                     >
                       <CardContent className="flex flex-col justify-between gap-6 p-4 md:flex-row md:items-center md:p-5">
-                        {/* Habit Info */}
                         <div className="flex min-w-55 items-start gap-4 md:items-center">
                           <div
                             className={cn(
@@ -430,13 +458,15 @@ export default function KaizenTracker() {
                           </div>
                         </div>
 
-                        {/* Day Progress Checkboxes */}
                         <div className="flex w-full max-w-md flex-1 items-center justify-between rounded-xl border border-border/30 bg-muted/30 p-2.5 md:w-auto md:border-0 md:bg-transparent md:p-0">
                           {currentWeekDays.map((date) => {
                             const dateStr = format(date, "yyyy-MM-dd")
                             const dayName = format(date, "EEE")
                             const isChecked =
                               logs[`${habit.id}-${dateStr}`] || false
+
+                            // Check if this specific day is the one being bridged by the freeze
+                            const isFrozenDay = dateStr === frozenDateStr
 
                             return (
                               <div
@@ -448,27 +478,40 @@ export default function KaizenTracker() {
                                     "text-[10px] font-bold tracking-wider uppercase transition-colors",
                                     isChecked
                                       ? "text-primary/90"
-                                      : "text-muted-foreground/60"
+                                      : isFrozenDay
+                                        ? "text-blue-500"
+                                        : "text-muted-foreground/60"
                                   )}
                                 >
                                   {dayName}
                                 </span>
-                                <Checkbox
-                                  className={cn(
-                                    "h-7 w-7 rounded-md border-muted-foreground/30 transition-all duration-150 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:shadow-sm data-[state=checked]:shadow-emerald-500/20",
-                                    "hover:border-primary/50 focus-visible:ring-offset-background"
-                                  )}
-                                  checked={isChecked}
-                                  onCheckedChange={() =>
-                                    toggleHabit(habit.id, date)
-                                  }
-                                />
+
+                                {isFrozenDay ? (
+                                  // FROZEN STATE VISUAL
+                                  <button
+                                    onClick={() => toggleHabit(habit.id, date)}
+                                    className="flex h-7 w-7 items-center justify-center rounded-md border border-blue-500/40 bg-blue-500/10 shadow-sm ring-1 ring-blue-500/20 transition-all hover:bg-blue-500/20"
+                                    title="Streak Freeze Auto-Applied"
+                                  >
+                                    <Snowflake className="h-4 w-4 text-blue-500" />
+                                  </button>
+                                ) : (
+                                  // NORMAL CHECKBOX
+                                  <Checkbox
+                                    className={cn(
+                                      "h-7 w-7 rounded-md border-muted-foreground/30 transition-all duration-150 hover:border-primary/50 focus-visible:ring-offset-background data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:shadow-sm data-[state=checked]:shadow-emerald-500/20"
+                                    )}
+                                    checked={isChecked}
+                                    onCheckedChange={() =>
+                                      toggleHabit(habit.id, date)
+                                    }
+                                  />
+                                )}
                               </div>
                             )
                           })}
                         </div>
 
-                        {/* Target Badge & Actions */}
                         <div className="flex items-center justify-between gap-3 border-t border-border/30 pt-3 md:justify-end md:border-0 md:pt-0">
                           <span
                             className={cn(
@@ -593,7 +636,6 @@ export default function KaizenTracker() {
         stats={playerStats}
       />
 
-      {/* Multiplayer Status Dialog */}
       {isMultiplayerOpen && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-background/60 p-4 backdrop-blur-sm sm:items-center">
           <div className="w-full max-w-md overflow-hidden rounded-3xl border border-border/50 bg-card/90 p-6 shadow-2xl backdrop-blur-xl">
@@ -603,8 +645,7 @@ export default function KaizenTracker() {
                   Multiplayer Mode
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Create a private room and invite friends to share live habits,
-                  expenses, and notes.
+                  Create a private room and invite friends to share live habits.
                 </p>
               </div>
               <Button
@@ -616,7 +657,6 @@ export default function KaizenTracker() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-
             <div className="mt-6 space-y-3">
               <div className="rounded-2xl border border-border/50 bg-background/50 p-4">
                 <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
@@ -625,11 +665,7 @@ export default function KaizenTracker() {
                 <p className="mt-2 font-mono text-xl font-black">
                   KAIZEN-ROOM-01
                 </p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Supabase Realtime will connect users to the same room.
-                </p>
               </div>
-
               <Button className="w-full">Create / Join Room</Button>
               <Button variant="outline" className="w-full">
                 Copy Invite Link
@@ -639,7 +675,7 @@ export default function KaizenTracker() {
         </div>
       )}
 
-      {/* Habit Streaks Custom Modal (Matches Theme Perfectly) */}
+      {/* Habit Streaks Modal WITH FREEZE INDICATORS */}
       {isStreaksModalOpen && (
         <div className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-background/80 p-4 backdrop-blur-sm duration-200 fade-in">
           <Card className="relative w-full max-w-md overflow-hidden border-border/50 bg-card/95 shadow-xl backdrop-blur-md">
@@ -665,28 +701,48 @@ export default function KaizenTracker() {
                   .filter((h) => !h.is_archived)
                   .sort((a, b) => getHabitStreak(b.id) - getHabitStreak(a.id))
                   .map((habit) => {
-                    const streak = getHabitStreak(habit.id)
+                    const { streak, freezeUsed } = getHabitStreakDetails(
+                      habit.id
+                    )
                     const IconComponent =
                       (Icons as any)[habit.icon_name] || Activity
 
                     return (
                       <div
                         key={habit.id}
-                        className="flex items-center justify-between rounded-xl border border-border/30 bg-muted/20 p-3 transition-colors hover:bg-muted/40"
+                        className="flex flex-col gap-2 rounded-xl border border-border/30 bg-muted/20 p-3 transition-colors hover:bg-muted/40"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="rounded-lg border border-border/50 bg-background p-2 text-foreground/80 shadow-sm">
-                            <IconComponent className="h-4 w-4" />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="rounded-lg border border-border/50 bg-background p-2 text-foreground/80 shadow-sm">
+                              <IconComponent className="h-4 w-4" />
+                            </div>
+                            <span className="text-sm font-semibold">
+                              {habit.title}
+                            </span>
                           </div>
-                          <span className="text-sm font-semibold">
-                            {habit.title}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1">
-                          <Flame className="h-3.5 w-3.5 text-orange-500" />
-                          <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
-                            {streak} {streak === 1 ? "Day" : "Days"}
-                          </span>
+
+                          <div className="flex items-center gap-2">
+                            {/* Streak Freeze Indicator Badge */}
+                            {freezeUsed && (
+                              <div
+                                className="flex items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-1"
+                                title="A Streak Freeze was automatically applied to save this streak."
+                              >
+                                <Snowflake className="h-3.5 w-3.5 text-blue-500" />
+                                <span className="text-[10px] font-bold text-blue-600 uppercase dark:text-blue-400">
+                                  Frozen
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="flex items-center gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1">
+                              <Flame className="h-3.5 w-3.5 text-orange-500" />
+                              <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
+                                {streak} {streak === 1 ? "Day" : "Days"}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )
