@@ -56,7 +56,6 @@ export default function KaizenTracker() {
     prevWeek,
     checksThisWeek,
     weekCompletionPct,
-    dsaStreak,
     currentWeekDays,
     addHabit,
     updateHabit,
