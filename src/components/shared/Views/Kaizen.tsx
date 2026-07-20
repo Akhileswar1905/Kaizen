@@ -39,6 +39,7 @@ import { PomodoroSettingsModal } from "../Widgets/Pomodoro Settings"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { WorkoutTracker } from "./WorkoutTracker"
+import { PlannerView } from "./PlannerView"
 
 export default function KaizenTracker() {
   const [isStatusOpen, setIsStatusOpen] = useState(false)
@@ -166,6 +167,10 @@ export default function KaizenTracker() {
     if (activeView === "workout-tracker") {
       return <WorkoutTracker onBack={() => setActiveView("dashboard")} />
     }
+    if (activeView === "planner") {
+      return <PlannerView onBack={() => setActiveView("dashboard")} />
+    }
+
     return (
       <div className="flex min-h-screen justify-center bg-background/50 px-3 py-6 font-sans text-foreground antialiased sm:px-6 sm:py-10 md:px-12 md:py-14">
         <div className="w-full max-w-4xl space-y-8 sm:space-y-10">
@@ -775,6 +780,7 @@ export default function KaizenTracker() {
         onOpenSystemDesign={() => setActiveView("system-design")}
         onOpenNotes={() => setActiveView("notes")}
         onOpenWorkoutTracker={() => setActiveView("workout-tracker")}
+        onOpenPlanner={() => setActiveView("planner")} // <--- Add this line
       />
     </div>
   )

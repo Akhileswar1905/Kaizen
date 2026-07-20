@@ -67,6 +67,7 @@ export function useTracker() {
     | "system-design"
     | "notes"
     | "workout-tracker"
+    | "planner"
   >("dashboard")
 
   // Fetch initial data
