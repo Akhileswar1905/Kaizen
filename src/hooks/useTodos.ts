@@ -174,6 +174,29 @@ export function useTodos() {
     }
   }, [])
 
+  const updateTodo = useCallback(
+    async (id: string, updates: { title: string; description: string }) => {
+      let previous: Todo[] = []
+      setTodos((current) => {
+        previous = current
+        return current.map((t) => (t.id === id ? { ...t, ...updates } : t))
+      })
+
+      const { error: updateError } = await supabase
+        .from("daily_todos")
+        .update(updates)
+        .eq("id", id)
+
+      if (updateError) {
+        setError(updateError.message)
+        setTodos(previous) // revert on failure
+        return false
+      }
+      return true
+    },
+    []
+  )
+
   const deleteTodo = useCallback(async (id: string) => {
     let previous: Todo[] = []
     setTodos((current) => {
@@ -192,5 +215,5 @@ export function useTodos() {
     }
   }, [])
 
-  return { todos, loading, error, addTodo, toggleTodo, deleteTodo }
+  return { todos, loading, error, addTodo, toggleTodo, updateTodo, deleteTodo }
 }

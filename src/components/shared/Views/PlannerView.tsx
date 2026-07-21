@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { format, addDays, isSameDay } from "date-fns"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -26,6 +26,7 @@ import {
   ClipboardList,
   Loader2,
   AlertCircle,
+  Pencil,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTodos } from "@/hooks/useTodos"
@@ -38,13 +39,26 @@ export function PlannerView({ onBack }: PlannerViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null)
 
-  // Dialog State
+  // Dialog State (add task)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState("")
   const [newTaskDesc, setNewTaskDesc] = useState("")
 
+  // Inline editing state for the detail panel (title/description)
+  const [isEditingDetail, setIsEditingDetail] = useState(false)
+  const [editTaskTitle, setEditTaskTitle] = useState("")
+  const [editTaskDesc, setEditTaskDesc] = useState("")
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
+
+  // Leaving edit mode whenever the selected task changes (or is deselected)
+  // avoids stale edits bleeding into a different task.
+  useEffect(() => {
+    setIsEditingDetail(false)
+  }, [selectedTodoId])
+
   // Backed by Supabase — see useTodos.ts for the table schema and RLS policy.
-  const { todos, loading, error, addTodo, toggleTodo, deleteTodo } = useTodos()
+  const { todos, loading, error, addTodo, toggleTodo, updateTodo, deleteTodo } =
+    useTodos()
 
   const dateStr = format(currentDate, "yyyy-MM-dd")
   const activeTodos = todos.filter((t) => t.date === dateStr)
@@ -108,6 +122,36 @@ export function PlannerView({ onBack }: PlannerViewProps) {
   const handleDeleteTodo = (id: string) => {
     deleteTodo(id)
     if (selectedTodoId === id) setSelectedTodoId(null)
+  }
+
+  const startEditingDetail = () => {
+    if (!selectedTodo) return
+    setEditTaskTitle(selectedTodo.title)
+    setEditTaskDesc(selectedTodo.description)
+    setIsEditingDetail(true)
+  }
+
+  const cancelEditingDetail = () => {
+    setIsEditingDetail(false)
+  }
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedTodo) return
+    if (!editTaskTitle.trim() || !editTaskDesc.trim()) return
+
+    setIsSavingEdit(true)
+    const success = await updateTodo(selectedTodo.id, {
+      title: editTaskTitle.trim(),
+      description: editTaskDesc.trim(),
+    })
+    setIsSavingEdit(false)
+
+    if (success) {
+      setIsEditingDetail(false)
+    }
+    // On failure, edit mode stays open and `error` from the hook surfaces
+    // in the banner so the person can retry.
   }
 
   return (
@@ -443,77 +487,163 @@ export function PlannerView({ onBack }: PlannerViewProps) {
                   {/* Detail panel */}
                   <div className="flex min-w-0 flex-1 flex-col p-5">
                     {selectedTodo ? (
-                      <div className="flex h-full flex-col">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-2.5">
-                            <button
+                      isEditingDetail ? (
+                        <form
+                          onSubmit={handleSaveEdit}
+                          className="flex h-full flex-col"
+                        >
+                          <div className="grid gap-4">
+                            <div className="grid gap-2">
+                              <Label
+                                htmlFor="edit-title"
+                                className="text-xs font-bold tracking-wider text-muted-foreground uppercase"
+                              >
+                                Title *
+                              </Label>
+                              <Input
+                                id="edit-title"
+                                autoFocus
+                                placeholder="e.g. Complete landing page"
+                                value={editTaskTitle}
+                                onChange={(e) =>
+                                  setEditTaskTitle(e.target.value)
+                                }
+                                className="border-border/50 bg-background/50 text-base font-semibold focus-visible:ring-primary/50"
+                                required
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label
+                                htmlFor="edit-description"
+                                className="text-xs font-bold tracking-wider text-muted-foreground uppercase"
+                              >
+                                Description *
+                              </Label>
+                              <Textarea
+                                id="edit-description"
+                                placeholder="Specific details on how to execute this..."
+                                value={editTaskDesc}
+                                onChange={(e) =>
+                                  setEditTaskDesc(e.target.value)
+                                }
+                                className="min-h-32 flex-1 resize-none border-border/50 bg-background/50 text-sm leading-relaxed focus-visible:ring-primary/50"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex items-center justify-end gap-2 border-t border-border/30 pt-4">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={cancelEditingDetail}
+                              disabled={isSavingEdit}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="submit"
+                              size="sm"
+                              disabled={
+                                !editTaskTitle.trim() ||
+                                !editTaskDesc.trim() ||
+                                isSavingEdit
+                              }
+                              className="gap-1.5 rounded-lg"
+                            >
+                              {isSavingEdit && (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              )}
+                              {isSavingEdit ? "Saving..." : "Save Changes"}
+                            </Button>
+                          </div>
+                        </form>
+                      ) : (
+                        <div className="flex h-full flex-col">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-2.5">
+                              <button
+                                onClick={() => toggleTodo(selectedTodo.id)}
+                                className="mt-0.5 shrink-0 transition-transform hover:scale-110 focus:outline-none"
+                              >
+                                {selectedTodo.completed ? (
+                                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                                ) : (
+                                  <Circle className="h-5 w-5 text-muted-foreground/50 hover:text-primary/70" />
+                                )}
+                              </button>
+                              <h3
+                                className={cn(
+                                  "text-lg font-bold tracking-tight",
+                                  selectedTodo.completed
+                                    ? "text-muted-foreground line-through opacity-70"
+                                    : "text-foreground"
+                                )}
+                              >
+                                {selectedTodo.title}
+                              </h3>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={startEditingDetail}
+                                className="h-8 w-8 hover:bg-muted"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  handleDeleteTodo(selectedTodo.id)
+                                }
+                                className="h-8 w-8 hover:bg-red-500/10 hover:text-red-500"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          <p
+                            className={cn(
+                              "mt-4 flex-1 text-sm leading-relaxed whitespace-pre-wrap",
+                              selectedTodo.completed
+                                ? "text-muted-foreground/60"
+                                : "text-muted-foreground"
+                            )}
+                          >
+                            {selectedTodo.description}
+                          </p>
+
+                          <div className="mt-4 flex items-center justify-between border-t border-border/30 pt-4">
+                            <span className="text-xs font-medium text-muted-foreground/70">
+                              {selectedTodo.completed
+                                ? "Completed"
+                                : "In progress"}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => toggleTodo(selectedTodo.id)}
-                              className="mt-0.5 shrink-0 transition-transform hover:scale-110 focus:outline-none"
+                              className="gap-1.5 rounded-lg border-border/50"
                             >
                               {selectedTodo.completed ? (
-                                <CheckCircle2 className="h-5 w-5 text-primary" />
+                                <>
+                                  <Circle className="h-3.5 w-3.5" /> Mark
+                                  incomplete
+                                </>
                               ) : (
-                                <Circle className="h-5 w-5 text-muted-foreground/50 hover:text-primary/70" />
+                                <>
+                                  <CheckCircle2 className="h-3.5 w-3.5" /> Mark
+                                  complete
+                                </>
                               )}
-                            </button>
-                            <h3
-                              className={cn(
-                                "text-lg font-bold tracking-tight",
-                                selectedTodo.completed
-                                  ? "text-muted-foreground line-through opacity-70"
-                                  : "text-foreground"
-                              )}
-                            >
-                              {selectedTodo.title}
-                            </h3>
+                            </Button>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteTodo(selectedTodo.id)}
-                            className="h-8 w-8 shrink-0 hover:bg-red-500/10 hover:text-red-500"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
-
-                        <p
-                          className={cn(
-                            "mt-4 flex-1 text-sm leading-relaxed whitespace-pre-wrap",
-                            selectedTodo.completed
-                              ? "text-muted-foreground/60"
-                              : "text-muted-foreground"
-                          )}
-                        >
-                          {selectedTodo.description}
-                        </p>
-
-                        <div className="mt-4 flex items-center justify-between border-t border-border/30 pt-4">
-                          <span className="text-xs font-medium text-muted-foreground/70">
-                            {selectedTodo.completed
-                              ? "Completed"
-                              : "In progress"}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleTodo(selectedTodo.id)}
-                            className="gap-1.5 rounded-lg border-border/50"
-                          >
-                            {selectedTodo.completed ? (
-                              <>
-                                <Circle className="h-3.5 w-3.5" /> Mark
-                                incomplete
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle2 className="h-3.5 w-3.5" /> Mark
-                                complete
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </div>
+                      )
                     ) : (
                       <div className="flex h-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/40 px-6 py-10 text-center">
                         <ClipboardList className="h-7 w-7 text-muted-foreground/30" />
