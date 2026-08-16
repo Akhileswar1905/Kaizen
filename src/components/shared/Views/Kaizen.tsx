@@ -14,11 +14,7 @@ import {
   Flame,
   Percent,
   CalendarDays,
-  Play,
-  Pause,
-  RotateCcw,
   X,
-  Settings,
   Users,
   Snowflake, // Added Snowflake icon for the streak freeze
 } from "lucide-react"
@@ -35,7 +31,6 @@ import { FinanceView } from "./FinanceView"
 import { SystemDesignHub } from "./SystemDesignTracker"
 import { NotesTracker } from "../Notes"
 import { StatusWindow } from "../Widgets/StatusWindow"
-import { PomodoroSettingsModal } from "../Widgets/Pomodoro Settings"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { WorkoutTracker } from "./WorkoutTracker"
@@ -44,7 +39,6 @@ import { PlannerView } from "./PlannerView"
 export default function KaizenTracker() {
   const [isStatusOpen, setIsStatusOpen] = useState(false)
   const [isStreaksModalOpen, setIsStreaksModalOpen] = useState(false)
-  const [isPomoSettingsOpen, setIsPomoSettingsOpen] = useState(false)
   const [isMultiplayerOpen, setIsMultiplayerOpen] = useState(false)
 
   const {
@@ -68,16 +62,6 @@ export default function KaizenTracker() {
     activeView,
     setActiveView,
     playerStats,
-    pomoTimeLeft,
-    isPomoActive,
-    isPomoBreak,
-    togglePomoTimer,
-    resetPomoTimer,
-    setPomoMode,
-    formatPomoTime,
-    workDuration,
-    breakDuration,
-    savePomoSettings,
   } = useTracker()
 
   // NEW LOGIC: Advanced streak calculator with 21-day Streak Freeze
@@ -294,84 +278,6 @@ export default function KaizenTracker() {
                 </CardContent>
               </Card>
             ))}
-          </div>
-
-          {/* Pomodoro Focus Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                Focus Session
-              </h2>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-medium text-muted-foreground/60">
-                  {isPomoActive ? "Running" : "Idle"}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsPomoSettingsOpen(true)}
-                  className="h-7 w-7 rounded-md text-muted-foreground hover:bg-muted"
-                  title="Pomodoro Settings"
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <Card className="relative overflow-hidden border border-border/50 bg-card/60 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-border hover:shadow-md">
-              <CardContent className="flex flex-col items-center justify-center p-8 sm:p-10">
-                <div className="mb-6 flex gap-2 rounded-full border border-border/50 bg-muted/40 p-1 backdrop-blur-sm">
-                  <button
-                    onClick={() => setPomoMode("work")}
-                    className={cn(
-                      "rounded-full px-5 py-1.5 text-xs font-bold transition-all",
-                      !isPomoBreak
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Focus
-                  </button>
-                  <button
-                    onClick={() => setPomoMode("break")}
-                    className={cn(
-                      "rounded-full px-5 py-1.5 text-xs font-bold transition-all",
-                      isPomoBreak
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Break
-                  </button>
-                </div>
-
-                <div className="mb-8 font-mono text-6xl font-black tracking-tighter text-foreground sm:text-8xl">
-                  {formatPomoTime(pomoTimeLeft)}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Button
-                    onClick={togglePomoTimer}
-                    className="h-12 w-36 rounded-xl font-bold tracking-wide transition-all hover:opacity-90"
-                  >
-                    {isPomoActive ? (
-                      <Pause className="mr-2 h-4 w-4" />
-                    ) : (
-                      <Play className="mr-2 h-4 w-4" />
-                    )}
-                    {isPomoActive ? "Pause" : "Start"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={resetPomoTimer}
-                    className="h-12 w-12 rounded-xl border-border/50 bg-background/50 hover:bg-muted"
-                  >
-                    <RotateCcw className="h-5 w-5 text-muted-foreground" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Habits List */}
@@ -641,7 +547,7 @@ export default function KaizenTracker() {
       />
 
       {isMultiplayerOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-background/60 p-4 backdrop-blur-sm sm:items-center">
+        <div className="fixed inset-0 z-100 flex items-end justify-center bg-background/60 p-4 backdrop-blur-sm sm:items-center">
           <div className="w-full max-w-md overflow-hidden rounded-3xl border border-border/50 bg-card/90 p-6 shadow-2xl backdrop-blur-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -764,14 +670,6 @@ export default function KaizenTracker() {
       )}
 
       {renderContent()}
-
-      <PomodoroSettingsModal
-        isOpen={isPomoSettingsOpen}
-        onClose={() => setIsPomoSettingsOpen(false)}
-        workDuration={workDuration}
-        breakDuration={breakDuration}
-        onSave={savePomoSettings}
-      />
 
       <FloatingMenu
         onOpenDSA={() => setActiveView("dsa")}
