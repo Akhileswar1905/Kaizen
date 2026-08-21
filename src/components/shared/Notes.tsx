@@ -567,8 +567,8 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                   mobileView === "editor" ? "hidden sm:flex" : "flex"
                 )}
               >
-                <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5 sm:px-4 sm:py-1.5">
-                  <div className="flex min-w-0 flex-1 items-center gap-1">
+                <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2.5 sm:px-4 sm:py-1.5">
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
                     {isSidebarCollapsed && (
                       <Button
                         variant="ghost"
@@ -617,7 +617,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
 
                 <div className="flex-1 overflow-y-auto p-2">
                   {filteredNotes.length === 0 ? (
-                    <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
+                    <div className="flex h-full flex-col items-center justify-center gap-5 p-8 text-center">
                       <FileText className="h-8 w-8 text-muted-foreground/30" />
                       <p className="text-sm font-medium text-muted-foreground">
                         {searchQuery || activeFilterTag !== "All"
@@ -650,7 +650,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                           key={note.id}
                           onClick={() => handleSelectNote(note)}
                           className={cn(
-                            "group relative mb-1 cursor-pointer rounded-lg px-3 py-2.5 text-left transition-all duration-150",
+                            "group relative mx-1 my-1.5 cursor-pointer rounded-lg px-3 py-2.5 text-left transition-all duration-150",
                             isCurrent
                               ? "bg-primary text-primary-foreground shadow-sm"
                               : "hover:bg-accent hover:text-accent-foreground active:scale-[0.99]"
