@@ -41,16 +41,20 @@ import {
   Pencil,
   Calendar as CalendarIcon,
   LayoutList,
+  CalendarClock,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTodos } from "@/hooks/useTodos"
+import { TimeBlockWeek } from "@/components/shared/Planner/TimeBlockWeek"
 
 interface PlannerViewProps {
   onBack: () => void
 }
 
 export function PlannerView({ onBack }: PlannerViewProps) {
-  const [viewMode, setViewMode] = useState<"daily" | "calendar">("daily")
+  const [viewMode, setViewMode] = useState<"daily" | "calendar" | "blocks">(
+    "daily"
+  )
   const [currentDate, setCurrentDate] = useState(new Date())
   const [calendarMonth, setCalendarMonth] = useState(new Date())
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null)
@@ -180,7 +184,12 @@ export function PlannerView({ onBack }: PlannerViewProps) {
 
   return (
     <div className="flex min-h-screen justify-center bg-background/50 px-3 py-6 font-sans text-foreground antialiased sm:px-6 sm:py-10 md:px-12 md:py-14">
-      <div className="w-full max-w-5xl animate-in space-y-6 duration-500 fade-in slide-in-from-bottom-4">
+      <div
+        className={cn(
+          "w-full animate-in space-y-6 duration-500 fade-in slide-in-from-bottom-4",
+          viewMode === "blocks" ? "max-w-6xl" : "max-w-5xl"
+        )}
+      >
         {/* Header Section */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
@@ -228,6 +237,18 @@ export function PlannerView({ onBack }: PlannerViewProps) {
               <CalendarIcon className="h-4 w-4" />
               Calendar
             </button>
+            <button
+              onClick={() => setViewMode("blocks")}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-all sm:flex-none",
+                viewMode === "blocks"
+                  ? "bg-primary text-primary-foreground shadow"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <CalendarClock className="h-4 w-4" />
+              Time blocks
+            </button>
           </div>
         </header>
 
@@ -251,6 +272,13 @@ export function PlannerView({ onBack }: PlannerViewProps) {
           </Card>
         ) : (
           <Card className="overflow-hidden border border-border/50 bg-card/40 shadow-sm backdrop-blur-sm">
+            {/* --- TIME BLOCKS VIEW --- */}
+            {viewMode === "blocks" && (
+              <CardContent className="p-0">
+                <TimeBlockWeek />
+              </CardContent>
+            )}
+
             {/* --- DAILY VIEW --- */}
             {viewMode === "daily" && (
               <CardContent className="flex flex-col gap-0 p-0 lg:flex-row">
