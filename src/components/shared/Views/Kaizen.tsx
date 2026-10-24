@@ -35,6 +35,7 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { WorkoutTracker } from "./WorkoutTracker"
 import { PlannerView } from "./PlannerView"
+import { TimeAuditView } from "./TimeAuditView"
 
 export default function KaizenTracker() {
   const [isStatusOpen, setIsStatusOpen] = useState(false)
@@ -153,6 +154,9 @@ export default function KaizenTracker() {
     }
     if (activeView === "planner") {
       return <PlannerView onBack={() => setActiveView("dashboard")} />
+    }
+    if (activeView === "time-audit") {
+      return <TimeAuditView onBack={() => setActiveView("dashboard")} />
     }
 
     return (
@@ -678,7 +682,8 @@ export default function KaizenTracker() {
         onOpenSystemDesign={() => setActiveView("system-design")}
         onOpenNotes={() => setActiveView("notes")}
         onOpenWorkoutTracker={() => setActiveView("workout-tracker")}
-        onOpenPlanner={() => setActiveView("planner")} // <--- Add this line
+        onOpenPlanner={() => setActiveView("planner")}
+        onOpenTimeAudit={() => setActiveView("time-audit")}
       />
     </div>
   )

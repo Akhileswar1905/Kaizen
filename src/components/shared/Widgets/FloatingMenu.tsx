@@ -6,6 +6,7 @@ import {
   BookOpen,
   Calendar,
   GraduationCap,
+  Grid2x2,
   MenuIcon,
   StickyNote,
   Wallet,
@@ -20,6 +21,7 @@ interface FloatingMenuProps {
   onOpenNotes?: () => void
   onOpenWorkoutTracker?: () => void
   onOpenPlanner?: () => void
+  onOpenTimeAudit?: () => void
 }
 
 export function FloatingMenu({
@@ -30,6 +32,7 @@ export function FloatingMenu({
   onOpenNotes,
   onOpenWorkoutTracker,
   onOpenPlanner,
+  onOpenTimeAudit,
 }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -182,6 +185,24 @@ export function FloatingMenu({
             }}
           >
             <Calendar className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Option 8: Time Audit */}
+        <div className="group flex items-center gap-3">
+          <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
+            Time Audit
+          </span>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              onOpenTimeAudit?.()
+              setIsOpen(false)
+            }}
+          >
+            <Grid2x2 className="h-5 w-5" />
           </Button>
         </div>
       </div>
