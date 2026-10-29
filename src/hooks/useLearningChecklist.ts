@@ -12,7 +12,8 @@ export type LearningChecklistItem = {
   is_completed: boolean
   sort_order: number
 }
-type NewItem = { category: string; title: string; description?: string; is_completed?: boolean; sort_order?: number }
+export type NewLearningChecklistItem = { category: string; title: string; description?: string; is_completed?: boolean; sort_order?: number }
+type NewItem = NewLearningChecklistItem
 type Updates = Partial<Pick<LearningChecklistItem, "category" | "title" | "description" | "is_completed" | "sort_order">>
 const SEEDED_KEY = "kaizen-learning-checklist-seeded-v1"
 
