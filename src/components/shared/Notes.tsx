@@ -535,13 +535,34 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
           </div>
         </header>
 
+        {/* Quick category filters */}
+        <nav className="flex shrink-0 items-center gap-2 overflow-x-auto pb-1" aria-label="Filter notes by tag">
+          {["All", ...categories.map((category) => category.name)].map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setActiveFilterTag(tag)}
+              className={cn(
+                "shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition-colors",
+                activeFilterTag === tag
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border/70 bg-card/70 text-muted-foreground hover:bg-accent hover:text-foreground"
+              )}
+            >
+              {tag === "All" ? `All ${notes.length}` : tag}
+            </button>
+          ))}
+          <Button variant="outline" size="icon" className="h-9 w-9 shrink-0 rounded-full" onClick={() => setIsAddingCategory(true)} title="Add category">
+            <Plus className="h-4 w-4" />
+          </Button>
+        </nav>
+
         {/* Workspace Card */}
-        <Card className="flex h-[calc(100dvh-8.5rem)] min-h-dvh flex-col overflow-hidden rounded-lg border border-border bg-card/40 shadow-md backdrop-blur-sm sm:h-[calc(100dvh-12rem)] sm:min-h-150 sm:rounded-2xl">
+        <Card className="flex h-[calc(100dvh-11rem)] min-h-[34rem] flex-col overflow-hidden rounded-lg border border-border bg-card/40 shadow-md backdrop-blur-sm sm:h-[calc(100dvh-13rem)] sm:min-h-[36rem] sm:rounded-2xl">
           <CardContent className="flex min-h-0 flex-1 flex-col gap-0 p-0 lg:flex-row">
             {/* COLUMN 1: Desktop Sidebar (Folders & Tags) */}
             <aside
               className={cn(
-                "hidden shrink-0 flex-col overflow-y-auto border-border py-5 transition-all duration-300 ease-in-out lg:flex",
+                "hidden shrink-0 flex-col overflow-y-auto border-border py-5 transition-all duration-300 ease-in-out",
                 isSidebarCollapsed
                   ? "lg:w-0 lg:overflow-hidden lg:border-r-0 lg:py-0"
                   : "lg:w-60 lg:border-r"
@@ -562,7 +583,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
               {/* COLUMN 2: Notes List */}
               <div
                 className={cn(
-                  "flex min-h-0 w-full flex-col border-border bg-card/20 sm:w-64 sm:shrink-0 sm:border-r sm:border-b-0",
+                  "flex min-h-0 w-full flex-col border-border bg-card/20 sm:w-[55%] sm:shrink-0 sm:border-r sm:border-b-0",
                   // On mobile, hide list view if mobileView is set to 'editor'
                   mobileView === "editor" ? "hidden sm:flex" : "flex"
                 )}
@@ -615,7 +636,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                   </Button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-2">
+                <div className="grid flex-1 content-start grid-cols-1 gap-2 overflow-y-auto p-3 sm:grid-cols-2 xl:grid-cols-2">
                   {filteredNotes.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center gap-5 p-8 text-center">
                       <FileText className="h-8 w-8 text-muted-foreground/30" />
@@ -650,28 +671,22 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                           key={note.id}
                           onClick={() => handleSelectNote(note)}
                           className={cn(
-                            "group relative mx-1 my-1.5 cursor-pointer rounded-lg px-3 py-2.5 text-left transition-all duration-150",
+                            "group relative min-h-28 cursor-pointer rounded-xl border px-3 py-3 text-left transition-all duration-150",
                             isCurrent
-                              ? "bg-primary text-primary-foreground shadow-sm"
-                              : "hover:bg-accent hover:text-accent-foreground active:scale-[0.99]"
+                              ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/20"
+                              : "border-border/70 bg-card/70 hover:border-primary/30 hover:bg-accent/60 active:scale-[0.99]"
                           )}
                         >
                           <h4
                             className={cn(
-                              "truncate pr-5 text-sm leading-tight font-semibold",
-                              isCurrent
-                                ? "text-primary-foreground"
-                                : "text-foreground"
+                              "truncate pr-5 text-base leading-tight font-bold text-foreground"
                             )}
                           >
                             {note.title || "New Note"}
                           </h4>
                           <div
                             className={cn(
-                              "mt-1 flex items-center gap-2 text-xs",
-                              isCurrent
-                                ? "text-primary-foreground/80"
-                                : "text-muted-foreground"
+                              "mt-2 flex items-center gap-2 text-xs text-muted-foreground"
                             )}
                           >
                             <span className="shrink-0">{timeString}</span>
