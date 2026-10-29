@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils"
 import { WorkoutTracker } from "./WorkoutTracker"
 import { PlannerView } from "./PlannerView"
 import { TimeAuditView } from "./TimeAuditView"
+import { LearningChecklistView } from "./LearningChecklistView"
 
 export default function KaizenTracker() {
   const [isStatusOpen, setIsStatusOpen] = useState(false)
@@ -157,6 +158,9 @@ export default function KaizenTracker() {
     }
     if (activeView === "time-audit") {
       return <TimeAuditView onBack={() => setActiveView("dashboard")} />
+    }
+    if (activeView === "learning-checklist") {
+      return <LearningChecklistView onBack={() => setActiveView("dashboard")} />
     }
 
     return (
@@ -684,6 +688,7 @@ export default function KaizenTracker() {
         onOpenWorkoutTracker={() => setActiveView("workout-tracker")}
         onOpenPlanner={() => setActiveView("planner")}
         onOpenTimeAudit={() => setActiveView("time-audit")}
+        onOpenLearningChecklist={() => setActiveView("learning-checklist")}
       />
     </div>
   )
