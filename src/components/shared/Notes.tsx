@@ -583,8 +583,11 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
               {/* COLUMN 2: Notes List */}
               <div
                 className={cn(
-                  "flex min-h-0 w-full flex-col border-border bg-card/20 sm:w-[55%] sm:shrink-0 sm:border-r sm:border-b-0",
-                  // On mobile, hide list view if mobileView is set to 'editor'
+                  "flex min-h-0 w-full flex-col border-border bg-background transition-all duration-300",
+                  selectedNote || isEditing
+                    ? "sm:w-[46%] sm:shrink-0 sm:border-r sm:border-b-0"
+                    : "sm:w-full sm:flex-1",
+                  // On mobile, show the preview as a focused screen after selecting a note
                   mobileView === "editor" ? "hidden sm:flex" : "flex"
                 )}
               >
@@ -636,7 +639,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                   </Button>
                 </div>
 
-                <div className="grid flex-1 content-start grid-cols-1 gap-2 overflow-y-auto p-3 sm:grid-cols-2 xl:grid-cols-2">
+                <div className={cn("grid flex-1 content-start gap-3 overflow-y-auto p-3 sm:p-4", selectedNote || isEditing ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3")}>
                   {filteredNotes.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center gap-5 p-8 text-center">
                       <FileText className="h-8 w-8 text-muted-foreground/30" />
@@ -671,28 +674,26 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                           key={note.id}
                           onClick={() => handleSelectNote(note)}
                           className={cn(
-                            "group relative min-h-28 cursor-pointer rounded-xl border px-3 py-3 text-left transition-all duration-150",
+                            "group relative flex min-h-36 cursor-pointer flex-col rounded-2xl border p-4 text-left transition-all duration-200",
                             isCurrent
                               ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/20"
-                              : "border-border/70 bg-card/70 hover:border-primary/30 hover:bg-accent/60 active:scale-[0.99]"
+                              : "border-border/70 bg-card hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md active:scale-[0.99]"
                           )}
                         >
                           <h4
                             className={cn(
-                              "truncate pr-5 text-base leading-tight font-bold text-foreground"
+                              "line-clamp-2 pr-5 text-sm font-semibold leading-5 text-foreground sm:text-base"
                             )}
                           >
                             {note.title || "New Note"}
                           </h4>
                           <div
                             className={cn(
-                              "mt-2 flex items-center gap-2 text-xs text-muted-foreground"
+                              "mt-3 flex items-center gap-2 text-[11px] text-muted-foreground"
                             )}
                           >
                             <span className="shrink-0">{timeString}</span>
-                            <span className="truncate">
-                              {plainTextPreview || "No additional text"}
-                            </span>
+                            <span className="truncate">{note.tag ? `#${note.tag}` : "Study note"}</span>
                           </div>
                         </div>
                       )
@@ -701,11 +702,11 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                 </div>
               </div>
 
-              {/* COLUMN 3: Editor */}
+              {/* Side preview panel: opens when a note card is selected */}
+              {(selectedNote || isEditing) && (
               <div
                 className={cn(
-                  "flex min-h-0 min-w-0 flex-1 flex-col bg-card/10",
-                  // On mobile, hide editor view if mobileView is set to 'list' and no note is selected/editing
+                  "flex min-h-0 min-w-0 flex-1 flex-col border-l border-border/70 bg-card/60 shadow-[-12px_0_32px_-28px_hsl(var(--foreground)/0.35)] animate-in slide-in-from-right-4 fade-in duration-200",
                   mobileView === "list" ? "hidden sm:flex" : "flex"
                 )}
               >
@@ -735,6 +736,21 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                   </div>
 
                   <div className="flex items-center gap-1 sm:gap-2">
+                    {selectedNote && !isEditing && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedNote(null)
+                          setMobileView("list")
+                        }}
+                        className="h-8 w-8 text-muted-foreground hover:bg-accent hover:text-foreground"
+                        title="Close preview"
+                        aria-label="Close note preview"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                     {selectedNote && !isEditing && (
                       <Button
                         variant="ghost"
@@ -900,6 +916,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                   )}
                 </div>
               </div>
+              )}
             </div>
           </CardContent>
         </Card>
