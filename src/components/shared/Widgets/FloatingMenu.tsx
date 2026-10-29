@@ -7,6 +7,7 @@ import {
   Calendar,
   GraduationCap,
   Grid2x2,
+  ListChecks,
   MenuIcon,
   StickyNote,
   Wallet,
@@ -22,6 +23,7 @@ interface FloatingMenuProps {
   onOpenWorkoutTracker?: () => void
   onOpenPlanner?: () => void
   onOpenTimeAudit?: () => void
+  onOpenLearningChecklist?: () => void
 }
 
 export function FloatingMenu({
@@ -33,6 +35,7 @@ export function FloatingMenu({
   onOpenWorkoutTracker,
   onOpenPlanner,
   onOpenTimeAudit,
+  onOpenLearningChecklist,
 }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -185,6 +188,24 @@ export function FloatingMenu({
             }}
           >
             <Calendar className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Learning checklist */}
+        <div className="group flex items-center gap-3">
+          <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
+            Learning Checklist
+          </span>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              onOpenLearningChecklist?.()
+              setIsOpen(false)
+            }}
+          >
+            <ListChecks className="h-5 w-5" />
           </Button>
         </div>
 
