@@ -639,7 +639,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                   </Button>
                 </div>
 
-                <div className={cn("grid flex-1 content-start gap-3 overflow-y-auto p-3 sm:p-4", selectedNote || isEditing ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3")}>
+                <div className="flex flex-1 flex-col gap-1 overflow-y-auto p-2 sm:p-3">
                   {filteredNotes.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center gap-5 p-8 text-center">
                       <FileText className="h-8 w-8 text-muted-foreground/30" />
@@ -671,22 +671,22 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                           key={note.id}
                           onClick={() => handleSelectNote(note)}
                           className={cn(
-                            "group relative flex min-h-36 cursor-pointer flex-col rounded-2xl border p-4 text-left transition-all duration-200",
+                            "group relative flex w-full cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-3 text-left transition-colors duration-150",
                             isCurrent
-                              ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/20"
-                              : "border-border/70 bg-card hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md active:scale-[0.99]"
+                              ? "border-primary/20 bg-primary/8 text-foreground"
+                              : "hover:border-border/70 hover:bg-accent/60 active:bg-accent"
                           )}
                         >
                           <h4
                             className={cn(
-                              "line-clamp-2 pr-5 text-sm font-semibold leading-5 text-foreground sm:text-base"
+                              "truncate pr-5 text-sm font-medium leading-5 text-foreground"
                             )}
                           >
                             {note.title || "New Note"}
                           </h4>
                           <div
                             className={cn(
-                              "mt-3 flex items-center gap-2 text-[11px] text-muted-foreground"
+                              "mt-1 flex items-center gap-2 text-xs text-muted-foreground"
                             )}
                           >
                             <span className="shrink-0">{timeString}</span>
