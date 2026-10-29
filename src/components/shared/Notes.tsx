@@ -663,9 +663,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                     filteredNotes.map((note) => {
                       const isCurrent =
                         selectedNote?.id === note.id && !isEditing
-                      const plainTextPreview = note.content
-                        .replace(/<[^>]+>/g, "")
-                        .substring(0, 60)
                       const noteDate = new Date(note.created_at)
                       const timeString = format(noteDate, "h:mm a")
 
