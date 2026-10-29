@@ -69,6 +69,7 @@ export function useTracker() {
     | "workout-tracker"
     | "planner"
     | "time-audit"
+    | "learning-checklist"
   >("dashboard")
 
   // Fetch initial data
