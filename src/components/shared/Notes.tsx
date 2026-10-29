@@ -3,28 +3,29 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { RichTextEditor } from "./RichTextEditor"
 import {
   Loader2,
   Trash2,
   Search,
-  Inbox,
   PenTool,
   ChevronLeft,
   SaveAll,
   Folder,
   FolderPlus,
-  PlusCircle,
   Plus,
   Edit3,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Menu,
   FileText,
   X,
 } from "lucide-react"
-import { format } from "date-fns"
+import {
+  differenceInCalendarDays,
+  format,
+  isToday,
+  isYesterday,
+} from "date-fns"
 import { cn } from "@/lib/utils"
 import { useGamification } from "@/contexts/GamificationContext"
 import {
@@ -35,17 +36,173 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 const DRAFT_KEY = "study_studio_local_draft"
 
+interface Note {
+  id: string
+  title: string
+  content: string
+  tag: string | null
+  folder_id: string | null
+  created_at: string
+}
+
+interface Category {
+  id: string
+  name: string
+}
+
+interface FolderRow {
+  id: string
+  name: string
+}
+
 interface NotesTrackerProps {
   onBack: () => void
+}
+
+// Each tag gets a stable colour derived from its name, so "Study" is always
+// the same hue wherever it appears.
+const TAG_STYLES = [
+  "bg-blue-500/15 text-blue-700 dark:text-blue-300",
+  "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+  "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300",
+]
+
+function tagStyle(tag: string | null): string {
+  if (!tag) return "bg-muted text-muted-foreground"
+  let hash = 0
+  for (let i = 0; i < tag.length; i++) hash = (hash * 31 + tag.charCodeAt(i)) >>> 0
+  return TAG_STYLES[hash % TAG_STYLES.length]
+}
+
+function TagPill({ tag, className }: { tag: string | null; className?: string }) {
+  if (!tag) return null
+  return (
+    <span
+      className={cn(
+        "inline-flex max-w-full items-center truncate rounded-full px-2 py-0.5 text-[11px] leading-4 font-semibold",
+        tagStyle(tag),
+        className
+      )}
+    >
+      {tag}
+    </span>
+  )
+}
+
+function groupLabel(date: Date): string {
+  if (isToday(date)) return "Today"
+  if (isYesterday(date)) return "Yesterday"
+  if (differenceInCalendarDays(new Date(), date) < 7) return "Previous 7 days"
+  return format(date, "MMMM yyyy")
+}
+
+function toSnippet(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 140)
+}
+
+interface NameFormProps {
+  kind: "category" | "folder"
+  existing: string[]
+  onSubmit: (name: string) => Promise<string | null>
+  onClose: () => void
+}
+
+// Lives inside DialogContent, so its state resets every time the dialog opens.
+function NameForm({ kind, existing, onSubmit, onClose }: NameFormProps) {
+  const [value, setValue] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const name = value.trim()
+    if (!name) {
+      setError(`Enter a name for the ${kind}.`)
+      return
+    }
+    if (existing.some((n) => n.toLowerCase() === name.toLowerCase())) {
+      setError(`You already have a ${kind} called "${name}".`)
+      return
+    }
+    setSaving(true)
+    setError(null)
+    const failure = await onSubmit(name)
+    setSaving(false)
+    if (failure) setError(failure)
+    else onClose()
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-5">
+      <DialogHeader>
+        <DialogTitle>
+          {kind === "category" ? "New category" : "New folder"}
+        </DialogTitle>
+        <DialogDescription>
+          {kind === "category"
+            ? "Categories label a note and appear as filters above your list."
+            : "Folders group related notes, like a subject or a course."}
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-2">
+        <Label htmlFor={`new-${kind}-name`}>Name</Label>
+        <Input
+          id={`new-${kind}-name`}
+          autoFocus
+          value={value}
+          maxLength={40}
+          onChange={(e) => {
+            setValue(e.target.value)
+            if (error) setError(null)
+          }}
+          placeholder={kind === "category" ? "e.g. Interview prep" : "e.g. DSA"}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `new-${kind}-error` : undefined}
+        />
+        {error && (
+          <p
+            id={`new-${kind}-error`}
+            role="alert"
+            className="text-sm font-medium text-destructive"
+          >
+            {error}
+          </p>
+        )}
+      </div>
+
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={saving}>
+          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+          {kind === "category" ? "Add category" : "Add folder"}
+        </Button>
+      </DialogFooter>
+    </form>
+  )
 }
 
 export function NotesTracker({ onBack }: NotesTrackerProps) {
@@ -53,20 +210,18 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
   const { triggerGamificationEvent, subtractGamificationPoints } =
     useGamification()
 
-  const [notes, setNotes] = useState<any[]>([])
-  const [categories, setCategories] = useState<any[]>([])
-  const [folders, setFolders] = useState<any[]>([])
+  const [notes, setNotes] = useState<Note[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [folders, setFolders] = useState<FolderRow[]>([])
   const [loading, setLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Core Application Workspace State
-  const [selectedNote, setSelectedNote] = useState<any | null>(null)
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [workspaceMode, setWorkspaceMode] = useState<"edit" | "preview">(
     "preview"
   )
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
   // Mobile view state for switching between list and editor on small screens
   const [mobileView, setMobileView] = useState<"list" | "editor">("list")
@@ -77,11 +232,9 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
   const [selectedTag, setSelectedTag] = useState("General")
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
 
-  // Dynamic Creation State
-  const [isAddingCategory, setIsAddingCategory] = useState(false)
-  const [newCategoryName, setNewCategoryName] = useState("")
-  const [isAddingFolder, setIsAddingFolder] = useState(false)
-  const [newFolderName, setNewFolderName] = useState("")
+  // Dialogs for creating categories and folders
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false)
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false)
 
   // Filter State
   const [searchQuery, setSearchQuery] = useState("")
@@ -193,44 +346,44 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     if (!error && data) setFolders(data)
   }
 
-  const handleAddFolder = async () => {
-    if (!newFolderName.trim()) return
+  // Both return an error message to show in the dialog, or null on success.
+  const addFolder = async (name: string): Promise<string | null> => {
+    if (!user) return "Sign in to add folders."
     const { data, error } = await supabase
       .from("note_folders")
-      .insert([{ name: newFolderName.trim(), user_id: user?.id }])
+      .insert([{ name, user_id: user.id }])
       .select()
       .single()
 
-    if (!error && data) {
-      setFolders([...folders, data])
-      setNewFolderName("")
-      setIsAddingFolder(false)
-    }
+    if (error || !data) return error?.message ?? "Could not add the folder."
+    setFolders((prev) => [...prev, data])
+    if (isEditing) setSelectedFolderId(data.id)
+    return null
   }
 
-  const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) return
+  const addCategory = async (name: string): Promise<string | null> => {
+    if (!user) return "Sign in to add categories."
     const { data, error } = await supabase
       .from("note_categories")
-      .insert([{ name: newCategoryName.trim(), user_id: user?.id }])
+      .insert([{ name, user_id: user.id }])
       .select()
       .single()
 
-    if (!error && data) {
-      setCategories([...categories, data])
-      setSelectedTag(data.name)
-      setNewCategoryName("")
-      setIsAddingCategory(false)
-    }
+    if (error || !data) return error?.message ?? "Could not add the category."
+    setCategories((prev) =>
+      [...prev, data].sort((a, b) => a.name.localeCompare(b.name))
+    )
+    if (isEditing) setSelectedTag(data.name)
+    return null
   }
 
   // --- UI Handlers ---
-  const handleSelectNote = (note: any) => {
+  const handleSelectNote = (note: Note) => {
     setSelectedNote(note)
     setIsEditing(false)
     setTitle(note.title)
     setContent(note.content)
-    setSelectedTag(note.tag)
+    setSelectedTag(note.tag ?? "General")
     setSelectedFolderId(note.folder_id || null)
     setWorkspaceMode("preview")
     setMobileView("editor")
@@ -304,18 +457,55 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     await subtractGamificationPoints({ type: "NOTE_SAVED", amount: 1 })
   }
 
+  const clearFilters = () => {
+    setSearchQuery("")
+    setActiveFilterTag("All")
+    setActiveFilterFolder(null)
+  }
+
+  const folderName = (id: string | null) =>
+    id ? (folders.find((f) => f.id === id)?.name ?? null) : null
+
+  const tagCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const n of notes) if (n.tag) counts[n.tag] = (counts[n.tag] ?? 0) + 1
+    return counts
+  }, [notes])
+
+  const snippets = useMemo(
+    () => new Map(notes.map((n) => [n.id, toSnippet(n.content)])),
+    [notes]
+  )
+
   const filteredNotes = useMemo(() => {
+    const q = searchQuery.toLowerCase()
     return notes.filter((note) => {
       const matchesTag =
         activeFilterTag === "All" || note.tag === activeFilterTag
       const matchesFolder =
         activeFilterFolder === null || note.folder_id === activeFilterFolder
       const matchesSearch =
-        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.content.toLowerCase().includes(searchQuery.toLowerCase())
+        note.title.toLowerCase().includes(q) ||
+        note.content.toLowerCase().includes(q)
       return matchesTag && matchesFolder && matchesSearch
     })
   }, [notes, activeFilterTag, activeFilterFolder, searchQuery])
+
+  // Notes arrive newest first, so groups come out in the right order.
+  const groupedNotes = useMemo(() => {
+    const groups: { label: string; notes: Note[] }[] = []
+    for (const note of filteredNotes) {
+      const label = groupLabel(new Date(note.created_at))
+      const last = groups[groups.length - 1]
+      if (last && last.label === label) last.notes.push(note)
+      else groups.push({ label, notes: [note] })
+    }
+    return groups
+  }, [filteredNotes])
+
+  const hasActiveFilters =
+    searchQuery !== "" || activeFilterTag !== "All" || activeFilterFolder !== null
+  const showPanel = Boolean(selectedNote) || isEditing
 
   if (loading) {
     return (
@@ -325,613 +515,545 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     )
   }
 
-  // Sidebar content component to reuse for both desktop sidebar and mobile sheet drawer
-  const renderSidebarContent = () => (
-    <div className="space-y-5 px-4">
-      {/* Folders Section */}
-      <div className="space-y-1">
-        <div className="group flex items-center justify-between pb-1.5">
-          <span className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
-            Folders
-          </span>
-          <div className="flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsAddingFolder(!isAddingFolder)}
-              className="h-6 w-6 text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100"
-              title="Add Folder"
-            >
-              <FolderPlus className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setIsSidebarCollapsed(true)
-                setIsMobileSidebarOpen(false)
-              }}
-              className="hidden h-6 w-6 text-muted-foreground hover:bg-accent hover:text-accent-foreground lg:flex"
-              title="Collapse Sidebar"
-            >
-              <PanelLeftClose className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-
-        {isAddingFolder && (
-          <div className="flex items-center gap-1 py-1">
-            <Input
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              placeholder="New folder name"
-              className="h-8 border-border bg-background text-xs shadow-none focus-visible:ring-1 focus-visible:ring-ring"
-              autoFocus
-              onKeyDown={(e) => e.key === "Enter" && handleAddFolder()}
-            />
-          </div>
-        )}
-
-        <div className="space-y-0.5">
-          <button
-            onClick={() => {
-              setActiveFilterFolder(null)
-              setIsMobileSidebarOpen(false)
-            }}
-            className={cn(
-              "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-all duration-150",
-              activeFilterFolder === null
-                ? "bg-primary font-medium text-primary-foreground shadow-sm"
-                : "text-foreground hover:bg-accent hover:text-accent-foreground"
-            )}
-          >
-            <Inbox className="h-4 w-4 shrink-0" />
-            <span>All Notes</span>
-            <span
-              className={cn(
-                "ml-auto text-xs tabular-nums",
-                activeFilterFolder === null
-                  ? "text-primary-foreground/70"
-                  : "text-muted-foreground/70"
-              )}
-            >
-              {notes.length}
-            </span>
-          </button>
-
-          {folders.map((folder) => (
-            <button
-              key={folder.id}
-              onClick={() => {
-                setActiveFilterFolder(folder.id)
-                setIsMobileSidebarOpen(false)
-              }}
-              className={cn(
-                "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-all duration-150",
-                activeFilterFolder === folder.id
-                  ? "bg-primary font-medium text-primary-foreground shadow-sm"
-                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
-              )}
-            >
-              <Folder className="h-4 w-4 shrink-0" />
-              <span className="truncate">{folder.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Tags Section */}
-      <div className="space-y-1">
-        <div className="group flex items-center justify-between pb-1.5">
-          <span className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
-            Tags
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsAddingCategory(!isAddingCategory)}
-            className="h-6 w-6 text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100"
-            title="Add Tag"
-          >
-            <PlusCircle className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-
-        {isAddingCategory && (
-          <div className="flex items-center gap-1 py-1">
-            <Input
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="New tag name"
-              className="h-8 border-border bg-background text-xs shadow-none focus-visible:ring-1 focus-visible:ring-ring"
-              autoFocus
-              onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
-            />
-          </div>
-        )}
-
-        <div className="flex flex-wrap gap-1.5">
-          {["All", ...categories.map((c) => c.name)].map((tag) => (
-            <button
-              key={tag}
-              onClick={() => {
-                setActiveFilterTag(tag)
-                setIsMobileSidebarOpen(false)
-              }}
-              className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium transition-all duration-150",
-                activeFilterTag === tag
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              )}
-            >
-              #{tag}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-
   return (
-    <div className="flex min-h-dvh justify-center bg-background/50 px-2 py-2 font-sans text-foreground antialiased sm:px-6 sm:py-1 md:px-12 md:py-7">
-      <div className="flex w-full max-w-6xl animate-in flex-col space-y-3 duration-500 fade-in slide-in-from-bottom-4 sm:space-y-6">
+    <div className="flex min-h-dvh justify-center bg-background/50 px-3 py-3 font-sans text-foreground antialiased sm:px-6 sm:py-5 md:px-10 md:py-7">
+      <div className="flex w-full max-w-6xl animate-in flex-col gap-4 duration-500 fade-in slide-in-from-bottom-4 sm:gap-5">
         {/* Header */}
-        <header className="flex shrink-0 items-center justify-between gap-3 px-1 sm:px-0">
+        <header className="flex shrink-0 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
             <Button
               variant="ghost"
               size="icon"
               onClick={onBack}
+              aria-label="Back to dashboard"
               className="h-9 w-9 shrink-0 rounded-full hover:bg-accent hover:text-accent-foreground sm:h-10 sm:w-10"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex sm:h-11 sm:w-11">
-                <PenTool className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="truncate text-lg font-extrabold tracking-tight text-foreground sm:text-3xl">
-                  Study Notes
-                </h1>
-                <p className="mt-0.5 hidden text-xs font-medium text-muted-foreground sm:block sm:text-sm">
-                  Organize, edit, and review your study materials.
-                </p>
-              </div>
+            <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
+              <PenTool className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+                Study Notes
+              </h1>
+              <p className="mt-0.5 hidden text-sm font-medium text-muted-foreground sm:block">
+                Organize, edit, and review your study materials.
+              </p>
             </div>
           </div>
 
-          {/* Mobile drawer trigger for folders/tags */}
-          <div className="flex shrink-0 items-center lg:hidden">
-            <Sheet
-              open={isMobileSidebarOpen}
-              onOpenChange={setIsMobileSidebarOpen}
-            >
-              <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 border-border text-xs shadow-none"
-                >
-                  <Menu className="h-3.5 w-3.5" />
-                  <span className="xs:inline hidden">Folders & Tags</span>
-                  <span className="xs:hidden">Browse</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="left"
-                className="w-[85vw] max-w-72 overflow-y-auto bg-card p-6"
-              >
-                <SheetTitle className="mb-4 text-base font-bold">
-                  Workspace Filters
-                </SheetTitle>
-                <SheetDescription className="sr-only">
-                  Manage and filter your study notes by folders and tags.
-                </SheetDescription>
-                {renderSidebarContent()}
-              </SheetContent>
-            </Sheet>
-          </div>
+          <Button
+            onClick={handleInitNewNote}
+            className="shrink-0 gap-1.5 rounded-full px-4 font-semibold shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New note</span>
+          </Button>
         </header>
 
-        {/* Quick category filters */}
-        <nav className="flex shrink-0 items-center gap-2 overflow-x-auto pb-1" aria-label="Filter notes by tag">
-          {["All", ...categories.map((category) => category.name)].map((tag) => (
-            <button
-              key={tag}
-              onClick={() => setActiveFilterTag(tag)}
-              className={cn(
-                "shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition-colors",
-                activeFilterTag === tag
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border/70 bg-card/70 text-muted-foreground hover:bg-accent hover:text-foreground"
-              )}
+        {/* Filters: categories on the left, folder on the right */}
+        <div className="flex shrink-0 flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <nav
+            className="-mx-1 flex min-w-0 items-center gap-2 overflow-x-auto px-1 pb-1 sm:pb-0"
+            aria-label="Filter notes by category"
+          >
+            {["All", ...categories.map((c) => c.name)].map((tag) => {
+              const active = activeFilterTag === tag
+              const count = tag === "All" ? notes.length : (tagCounts[tag] ?? 0)
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setActiveFilterTag(tag)}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                    active
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border/70 bg-card/70 text-muted-foreground hover:bg-accent hover:text-foreground"
+                  )}
+                >
+                  {tag}
+                  <span
+                    className={cn(
+                      "tabular-nums",
+                      active ? "text-background/60" : "text-muted-foreground/70"
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0 rounded-full border-dashed"
+              onClick={() => setCategoryDialogOpen(true)}
+              title="Add category"
+              aria-label="Add category"
             >
-              {tag === "All" ? `All ${notes.length}` : tag}
-            </button>
-          ))}
-          <Button variant="outline" size="icon" className="h-9 w-9 shrink-0 rounded-full" onClick={() => setIsAddingCategory(true)} title="Add category">
-            <Plus className="h-4 w-4" />
-          </Button>
-        </nav>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </nav>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <Select
+              value={activeFilterFolder ?? "all"}
+              onValueChange={(v) => setActiveFilterFolder(v === "all" ? null : v)}
+            >
+              <SelectTrigger
+                aria-label="Filter by folder"
+                className="h-8 min-w-36 flex-1 gap-2 rounded-full border-border/70 bg-card/70 text-xs font-semibold shadow-none sm:flex-none"
+              >
+                <Folder className="h-3.5 w-3.5 text-muted-foreground" />
+                <SelectValue placeholder="All folders" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All folders</SelectItem>
+                {folders.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>
+                    {f.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0 rounded-full border-dashed"
+              onClick={() => setFolderDialogOpen(true)}
+              title="Add folder"
+              aria-label="Add folder"
+            >
+              <FolderPlus className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
         {/* Workspace Card */}
-        <Card className="flex h-[calc(100dvh-11rem)] min-h-[34rem] flex-col overflow-hidden rounded-lg border border-border bg-card/40 shadow-md backdrop-blur-sm sm:h-[calc(100dvh-13rem)] sm:min-h-[36rem] sm:rounded-2xl">
-          <CardContent className="flex min-h-0 flex-1 flex-col gap-0 p-0 lg:flex-row">
-            {/* COLUMN 1: Desktop Sidebar (Folders & Tags) */}
-            <aside
-              className={cn(
-                "hidden shrink-0 flex-col overflow-y-auto border-border py-5 transition-all duration-300 ease-in-out",
-                isSidebarCollapsed
-                  ? "lg:w-0 lg:overflow-hidden lg:border-r-0 lg:py-0"
-                  : "lg:w-60 lg:border-r"
-              )}
-            >
-              <div
-                className={cn(
-                  "transition-opacity duration-300",
-                  isSidebarCollapsed && "lg:pointer-events-none lg:opacity-0"
-                )}
-              >
-                {renderSidebarContent()}
-              </div>
-            </aside>
-
-            {/* Inner Flex columns 2 and 3 */}
+        <Card className="flex h-[calc(100dvh-15rem)] min-h-[32rem] flex-col overflow-hidden rounded-xl border border-border bg-card/40 py-0 shadow-md backdrop-blur-sm sm:h-[calc(100dvh-13.5rem)] sm:min-h-[36rem] sm:rounded-2xl">
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-0 p-0">
             <div className="flex min-h-0 min-w-0 flex-1 flex-col sm:flex-row">
-              {/* COLUMN 2: Notes List */}
+              {/* COLUMN 1: Notes List */}
               <div
                 className={cn(
-                  "flex min-h-0 w-full flex-col border-border bg-background transition-all duration-300",
-                  selectedNote || isEditing
-                    ? "sm:w-[46%] sm:shrink-0 sm:border-r sm:border-b-0"
-                    : "sm:w-full sm:flex-1",
+                  "min-h-0 w-full flex-col border-border bg-background/60",
+                  showPanel
+                    ? "sm:flex sm:w-[44%] sm:max-w-md sm:shrink-0 sm:border-r"
+                    : "sm:flex sm:flex-1",
                   // On mobile, show the preview as a focused screen after selecting a note
-                  mobileView === "editor" ? "hidden sm:flex" : "flex"
+                  mobileView === "editor" ? "hidden" : "flex"
                 )}
               >
-                <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2.5 sm:px-4 sm:py-1.5">
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
-                    {isSidebarCollapsed && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          setIsSidebarCollapsed(!isSidebarCollapsed)
-                        }
-                        className="hidden h-8 w-8 shrink-0 text-muted-foreground hover:bg-accent hover:text-accent-foreground lg:flex"
-                        title={
-                          isSidebarCollapsed
-                            ? "Expand Sidebar"
-                            : "Collapse Sidebar"
-                        }
+                <div className="flex items-center gap-2 border-b border-border px-3 py-3 sm:px-4">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search notes"
+                      aria-label="Search notes"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="h-9 rounded-lg border-border bg-card/60 pr-8 pl-9 text-sm shadow-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        aria-label="Clear search"
+                        className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                       >
-                        <PanelLeftOpen className="h-4 w-4" />
-                      </Button>
+                        <X className="h-3 w-3" />
+                      </button>
                     )}
-                    <div className="relative flex-1">
-                      <Search className="absolute top-2.5 left-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input
-                        placeholder="Search notes..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-8 rounded-md border-border bg-background pl-8 text-sm shadow-none focus-visible:ring-1 focus-visible:ring-ring"
-                      />
-                      {searchQuery && (
-                        <button
-                          onClick={() => setSearchQuery("")}
-                          className="absolute top-2 right-2 rounded-full p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleInitNewNote}
-                    className="h-8 w-8 shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground"
-                    title="New note"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                  <span className="shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
+                    {filteredNotes.length}{" "}
+                    {filteredNotes.length === 1 ? "note" : "notes"}
+                  </span>
                 </div>
 
-                <div className="flex flex-1 flex-col gap-1 overflow-y-auto p-2 sm:p-3">
+                <div className="flex-1 overflow-y-auto px-2 pb-3 sm:px-3">
                   {filteredNotes.length === 0 ? (
-                    <div className="flex h-full flex-col items-center justify-center gap-5 p-8 text-center">
-                      <FileText className="h-8 w-8 text-muted-foreground/30" />
+                    <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/60">
+                        <FileText className="h-6 w-6 text-muted-foreground/60" />
+                      </div>
                       <p className="text-sm font-medium text-muted-foreground">
-                        {searchQuery || activeFilterTag !== "All"
-                          ? "No notes match"
-                          : "No notes yet"}
+                        {hasActiveFilters ? "No notes match" : "No notes yet"}
                       </p>
-                      {!searchQuery && activeFilterTag === "All" && (
+                      {hasActiveFilters ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearFilters}
+                          className="text-xs"
+                        >
+                          Clear filters
+                        </Button>
+                      ) : (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={handleInitNewNote}
-                          className="mt-1 gap-1 text-xs text-primary hover:bg-primary/10 hover:text-primary"
+                          className="gap-1 text-xs text-primary hover:bg-primary/10 hover:text-primary"
                         >
                           <Plus className="h-3.5 w-3.5" /> Create one
                         </Button>
                       )}
                     </div>
                   ) : (
-                    filteredNotes.map((note) => {
-                      const isCurrent =
-                        selectedNote?.id === note.id && !isEditing
-                      const noteDate = new Date(note.created_at)
-                      const timeString = format(noteDate, "h:mm a")
-
-                      return (
-                        <div
-                          key={note.id}
-                          onClick={() => handleSelectNote(note)}
-                          className={cn(
-                            "group relative flex w-full cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3 py-3 text-left transition-colors duration-150",
-                            isCurrent
-                              ? "border-primary/20 bg-primary/8 text-foreground"
-                              : "hover:border-border/70 hover:bg-accent/60 active:bg-accent"
-                          )}
-                        >
-                          <h4
-                            className={cn(
-                              "truncate pr-5 text-sm font-medium leading-5 text-foreground"
-                            )}
-                          >
-                            {note.title || "New Note"}
-                          </h4>
-                          <div
-                            className={cn(
-                              "mt-1 flex items-center gap-2 text-xs text-muted-foreground"
-                            )}
-                          >
-                            <span className="shrink-0">{timeString}</span>
-                            <span className="truncate">{note.tag ? `#${note.tag}` : "Study note"}</span>
-                          </div>
-                        </div>
-                      )
-                    })
-                  )}
-                </div>
-              </div>
-
-              {/* Side preview panel: opens when a note card is selected */}
-              {(selectedNote || isEditing) && (
-              <div
-                className={cn(
-                  "flex min-h-0 min-w-0 flex-1 flex-col border-l border-border/70 bg-card/60 shadow-[-12px_0_32px_-28px_hsl(var(--foreground)/0.35)] animate-in slide-in-from-right-4 fade-in duration-200",
-                  mobileView === "list" ? "hidden sm:flex" : "flex"
-                )}
-              >
-                {/* Editor Toolbar */}
-                <div className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2 sm:px-5">
-                  <div className="flex items-center gap-2">
-                    {/* Mobile Back to List button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setMobileView("list")}
-                      className="gap-1 pl-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground sm:hidden"
-                    >
-                      <ChevronLeft className="h-4 w-4" /> Notes
-                    </Button>
-
-                    {hasAvailableDraft && !isEditing && (
-                      <Button
-                        onClick={loadDraft}
-                        variant="ghost"
-                        size="sm"
-                        className="gap-1.5 text-xs text-foreground hover:bg-accent hover:text-accent-foreground"
-                      >
-                        <SaveAll className="h-3.5 w-3.5" /> Restore Draft
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    {selectedNote && !isEditing && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedNote(null)
-                          setMobileView("list")
-                        }}
-                        className="h-8 w-8 text-muted-foreground hover:bg-accent hover:text-foreground"
-                        title="Close preview"
-                        aria-label="Close note preview"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {selectedNote && !isEditing && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => handleDelete(selectedNote.id, e)}
-                        className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                        title="Delete note"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-
-                    {!isEditing && selectedNote && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setIsEditing(true)
-                          setWorkspaceMode("edit")
-                        }}
-                        className="h-8 w-8 text-foreground hover:bg-accent hover:text-accent-foreground"
-                        title="Edit note"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
-                    )}
-
-                    {isEditing && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={handleSaveNote}
-                        disabled={
-                          isSubmitting || (!title.trim() && !content.trim())
-                        }
-                        className="gap-1.5 font-semibold shadow-sm"
-                      >
-                        {isSubmitting ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          "Done"
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Editor Content area */}
-                <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-3 md:px-10">
-                  <div className="mb-5 text-center text-xs font-medium text-muted-foreground sm:mb-6">
-                    {selectedNote
-                      ? format(
-                          new Date(selectedNote.created_at),
-                          "MMMM d, yyyy 'at' h:mm a"
-                        )
-                      : format(new Date(), "MMMM d, yyyy 'at' h:mm a")}
-
-                    {isEditing && draftSavedAt && (
-                      <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground">
-                        · Draft saved {format(draftSavedAt, "h:mm a")}
-                      </span>
-                    )}
-                  </div>
-
-                  {isEditing ? (
-                    <form
-                      id="note-form"
-                      onSubmit={handleSaveNote}
-                      className="mx-auto flex h-full max-w-3xl flex-col"
-                    >
-                      <div className="mb-4 flex flex-wrap items-center gap-2 sm:mb-6 sm:gap-3">
-                        <Select
-                          value={selectedFolderId || "none"}
-                          onValueChange={(v) =>
-                            setSelectedFolderId(v === "none" ? null : v)
-                          }
-                        >
-                          <SelectTrigger className="h-8 w-auto min-w-[110px] border-border bg-background text-xs shadow-none focus:ring-0">
-                            <SelectValue placeholder="Folder" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">No Folder</SelectItem>
-                            {folders.map((f) => (
-                              <SelectItem key={f.id} value={f.id}>
-                                {f.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        <Select
-                          value={selectedTag}
-                          onValueChange={setSelectedTag}
-                        >
-                          <SelectTrigger className="h-8 w-auto min-w-[110px] border-border bg-background text-xs shadow-none focus:ring-0">
-                            <SelectValue placeholder="Tag" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map((c) => (
-                              <SelectItem key={c.id} value={c.name}>
-                                #{c.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <Input
-                        placeholder="Title"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className="mb-3 h-auto border-none bg-transparent p-2 text-xl font-bold shadow-none placeholder:text-muted-foreground/40 focus-visible:ring-0 sm:mb-4 sm:text-3xl"
-                        required
-                      />
-
-                      <div className="flex-1 pb-12">
-                        <RichTextEditor value={content} onChange={setContent} />
-                      </div>
-                    </form>
-                  ) : (
-                    <div className="mx-auto flex h-full max-w-3xl flex-col">
-                      {selectedNote ? (
-                        <>
-                          <div className="mb-4 flex flex-wrap items-center gap-2 sm:mb-5">
-                            {selectedNote.tag && (
-                              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
-                                #{selectedNote.tag}
-                              </span>
-                            )}
-                            {selectedNote.folder_id && (
-                              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                                <Folder className="h-3 w-3" />
-                                {
-                                  folders.find(
-                                    (f) => f.id === selectedNote.folder_id
-                                  )?.name
-                                }
-                              </span>
-                            )}
-                          </div>
-                          <h1 className="mb-4 text-xl font-bold tracking-tight text-foreground sm:text-3xl">
-                            {selectedNote.title}
-                          </h1>
-                          <div className="apple-notes-preview pb-20 text-[15px] leading-relaxed text-foreground">
-                            <div
-                              dangerouslySetInnerHTML={{
-                                __html: selectedNote.content,
-                              }}
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-muted-foreground">
-                          <div className="text-center">
-                            <Edit3 className="mx-auto mb-3 h-10 w-10 opacity-20" />
-                            <p className="text-sm font-medium">
-                              Select a note or create a new one.
-                            </p>
-                          </div>
-                        </div>
+                    <div
+                      className={cn(
+                        "mx-auto w-full",
+                        !showPanel && "max-w-3xl"
                       )}
+                    >
+                      {groupedNotes.map((group) => (
+                        <section key={group.label}>
+                          <h3 className="sticky top-0 z-10 -mx-2 bg-background/90 px-4 pt-4 pb-1.5 text-[11px] font-bold tracking-wider text-muted-foreground uppercase backdrop-blur sm:-mx-3 sm:px-5">
+                            {group.label}
+                          </h3>
+                          <ul className="flex flex-col gap-1">
+                            {group.notes.map((note) => {
+                              const isCurrent =
+                                selectedNote?.id === note.id && !isEditing
+                              const noteDate = new Date(note.created_at)
+                              const when = isToday(noteDate)
+                                ? format(noteDate, "h:mm a")
+                                : format(noteDate, "MMM d")
+                              const snippet = snippets.get(note.id)
+                              const folder = folderName(note.folder_id)
+                              return (
+                                <li key={note.id}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectNote(note)}
+                                    aria-current={isCurrent ? "true" : undefined}
+                                    className={cn(
+                                      "flex w-full flex-col gap-1.5 rounded-xl px-3.5 py-3 text-left transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                                      isCurrent
+                                        ? "bg-primary/10 ring-1 ring-primary/25"
+                                        : "hover:bg-accent/60 active:bg-accent"
+                                    )}
+                                  >
+                                    <div className="flex items-baseline justify-between gap-3">
+                                      <h4 className="truncate text-sm leading-5 font-semibold text-foreground">
+                                        {note.title || "Untitled note"}
+                                      </h4>
+                                      <span className="shrink-0 text-[11px] font-medium text-muted-foreground tabular-nums">
+                                        {when}
+                                      </span>
+                                    </div>
+                                    {snippet && (
+                                      <p className="line-clamp-1 text-xs leading-5 text-muted-foreground">
+                                        {snippet}
+                                      </p>
+                                    )}
+                                    <div className="flex min-w-0 items-center gap-2">
+                                      <TagPill tag={note.tag} />
+                                      {folder && (
+                                        <span className="inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                                          <Folder className="h-3 w-3 shrink-0" />
+                                          <span className="truncate">{folder}</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                  </button>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        </section>
+                      ))}
                     </div>
                   )}
                 </div>
               </div>
+
+              {/* COLUMN 2: Preview / editor panel */}
+              {showPanel && (
+                <div
+                  className={cn(
+                    "min-h-0 min-w-0 flex-1 flex-col bg-card/60 animate-in fade-in duration-200 sm:slide-in-from-right-4",
+                    mobileView === "list" ? "hidden sm:flex" : "flex"
+                  )}
+                >
+                  {/* Toolbar */}
+                  <div className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2 sm:px-5">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setMobileView("list")}
+                        className="gap-1 pl-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground sm:hidden"
+                      >
+                        <ChevronLeft className="h-4 w-4" /> Notes
+                      </Button>
+
+                      {hasAvailableDraft && !isEditing && (
+                        <Button
+                          onClick={loadDraft}
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 text-xs text-foreground hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <SaveAll className="h-3.5 w-3.5" /> Restore draft
+                        </Button>
+                      )}
+
+                      {isEditing && (
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {draftSavedAt
+                            ? `Draft saved ${format(draftSavedAt, "h:mm a")}`
+                            : selectedNote
+                              ? "Editing"
+                              : "New note"}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 sm:gap-1.5">
+                      {selectedNote && !isEditing && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setIsEditing(true)
+                              setWorkspaceMode("edit")
+                            }}
+                            className="gap-1.5 text-xs font-semibold"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" /> Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => handleDelete(selectedNote.id, e)}
+                            className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            title="Delete note"
+                            aria-label="Delete note"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedNote(null)
+                              setMobileView("list")
+                            }}
+                            className="h-8 w-8 text-muted-foreground hover:bg-accent hover:text-foreground"
+                            title="Close preview"
+                            aria-label="Close note preview"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+
+                      {isEditing && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={handleSaveNote}
+                          disabled={
+                            isSubmitting || (!title.trim() && !content.trim())
+                          }
+                          className="gap-1.5 font-semibold shadow-sm"
+                        >
+                          {isSubmitting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Done"
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Content area */}
+                  <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-8 md:px-12">
+                    {isEditing ? (
+                      <form
+                        id="note-form"
+                        onSubmit={handleSaveNote}
+                        className="mx-auto flex h-full max-w-3xl flex-col"
+                      >
+                        <div className="mb-4 flex flex-wrap items-center gap-2 sm:mb-6">
+                          <div className="flex items-center gap-1">
+                            <Select
+                              value={selectedFolderId || "none"}
+                              onValueChange={(v) =>
+                                setSelectedFolderId(v === "none" ? null : v)
+                              }
+                            >
+                              <SelectTrigger
+                                aria-label="Folder"
+                                className="h-8 w-auto min-w-[120px] border-border bg-background text-xs shadow-none focus:ring-0"
+                              >
+                                <SelectValue placeholder="Folder" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">No folder</SelectItem>
+                                {folders.map((f) => (
+                                  <SelectItem key={f.id} value={f.id}>
+                                    {f.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground"
+                              onClick={() => setFolderDialogOpen(true)}
+                              title="Add folder"
+                              aria-label="Add folder"
+                            >
+                              <FolderPlus className="h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <Select
+                              value={selectedTag}
+                              onValueChange={setSelectedTag}
+                            >
+                              <SelectTrigger
+                                aria-label="Category"
+                                className="h-8 w-auto min-w-[120px] border-border bg-background text-xs shadow-none focus:ring-0"
+                              >
+                                <SelectValue placeholder="Category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categories.map((c) => (
+                                  <SelectItem key={c.id} value={c.name}>
+                                    {c.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground"
+                              onClick={() => setCategoryDialogOpen(true)}
+                              title="Add category"
+                              aria-label="Add category"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <Input
+                          placeholder="Title"
+                          aria-label="Note title"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          className="mb-3 h-auto border-none bg-transparent p-2 text-2xl font-bold shadow-none placeholder:text-muted-foreground/40 focus-visible:ring-0 sm:mb-4 sm:text-3xl"
+                          required
+                        />
+
+                        <div className="flex-1 pb-12">
+                          <RichTextEditor value={content} onChange={setContent} />
+                        </div>
+                      </form>
+                    ) : (
+                      <article className="mx-auto flex max-w-3xl flex-col">
+                        {selectedNote && (
+                          <>
+                            <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+                              <TagPill
+                                tag={selectedNote.tag}
+                                className="px-2.5 text-xs"
+                              />
+                              {folderName(selectedNote.folder_id) && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/70 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                                  <Folder className="h-3 w-3" />
+                                  {folderName(selectedNote.folder_id)}
+                                </span>
+                              )}
+                              <time
+                                dateTime={selectedNote.created_at}
+                                className="text-xs font-medium text-muted-foreground sm:ml-auto"
+                              >
+                                {format(
+                                  new Date(selectedNote.created_at),
+                                  "MMM d, yyyy · h:mm a"
+                                )}
+                              </time>
+                            </div>
+                            <h2 className="mb-6 border-b border-border/60 pb-6 text-3xl leading-tight font-bold tracking-tight text-balance text-foreground sm:text-4xl">
+                              {selectedNote.title}
+                            </h2>
+                            <div className="note-preview pb-20 text-[15px] leading-relaxed text-foreground">
+                              <div
+                                dangerouslySetInnerHTML={{
+                                  __html: selectedNote.content,
+                                }}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </article>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Add category / folder dialogs */}
+      <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <NameForm
+            kind="category"
+            existing={categories.map((c) => c.name)}
+            onSubmit={addCategory}
+            onClose={() => setCategoryDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+      <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <NameForm
+            kind="folder"
+            existing={folders.map((f) => f.name)}
+            onSubmit={addFolder}
+            onClose={() => setFolderDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Theme variables are oklch, so reference them directly (not via hsl()). */}
       <style>{`
-        .apple-notes-preview h1 { font-size: 1.5rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.5rem; }
-        .apple-notes-preview h2 { font-size: 1.3rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; }
-        .apple-notes-preview h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; }
-        .apple-notes-preview p { margin-bottom: 1rem; line-height: 1.6; }
-        .apple-notes-preview ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
-        .apple-notes-preview ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
-        .apple-notes-preview li { margin-bottom: 0.25rem; }
-        .apple-notes-preview strong { font-weight: 600; }
-        .apple-notes-preview blockquote { border-left: 3px solid hsl(var(--border)); padding-left: 1rem; color: hsl(var(--muted-foreground)); }
-        .apple-notes-preview code { font-family: ui-monospace, monospace; background: hsl(var(--muted)); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
-        .apple-notes-preview pre { background: hsl(var(--muted)/0.5); padding: 1rem; border-radius: 8px; overflow-x: auto; margin-bottom: 1rem; }
-        .apple-notes-preview pre code { background: transparent; padding: 0; }
+        .note-preview h1 { font-size: 1.6rem; font-weight: 700; margin: 1.5rem 0 0.6rem; letter-spacing: -0.01em; }
+        .note-preview h2 { font-size: 1.35rem; font-weight: 700; margin: 1.5rem 0 0.6rem; letter-spacing: -0.01em; }
+        .note-preview h3 { font-size: 1.1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+        .note-preview > div > :first-child { margin-top: 0; }
+        .note-preview p { margin-bottom: 1rem; line-height: 1.7; }
+        .note-preview ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .note-preview ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .note-preview li { margin-bottom: 0.4rem; line-height: 1.65; }
+        .note-preview li::marker { color: var(--muted-foreground); }
+        .note-preview strong { font-weight: 600; }
+        .note-preview a { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+        .note-preview blockquote { border-left: 3px solid var(--border); padding-left: 1rem; margin-bottom: 1rem; color: var(--muted-foreground); }
+        .note-preview code { font-family: ui-monospace, SFMono-Regular, monospace; background: var(--muted); padding: 0.15rem 0.4rem; border-radius: 6px; font-size: 0.88em; }
+        .note-preview pre { background: var(--muted); padding: 1rem; border-radius: 12px; overflow-x: auto; margin-bottom: 1rem; border: 1px solid var(--border); }
+        .note-preview pre code { background: transparent; padding: 0; }
+        .note-preview img { max-width: 100%; border-radius: 10px; }
+        .note-preview hr { border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0; }
       `}</style>
     </div>
   )
