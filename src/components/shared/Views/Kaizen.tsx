@@ -164,195 +164,143 @@ export default function KaizenTracker() {
     return (
       <div className="kaizen-desktop flex min-h-screen justify-center px-3 py-4 font-sans text-foreground antialiased sm:px-6 sm:py-8">
         <div className="kaizen-window w-full max-w-5xl space-y-7 sm:space-y-9">
-          {/* Dashboard identity and weekly controls */}
-          <header className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card/75 p-5 shadow-sm backdrop-blur-xl sm:p-7">
-            <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary/[0.06] blur-3xl" />
-            <div className="relative flex flex-col gap-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3.5">
-                  <img src="/light_icon.png" alt="Kaizen" className="h-12 w-auto object-contain sm:h-14" />
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Your personal workspace</p>
-                    <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">A little better, every day.</h1>
-                  </div>
-                </div>
-                <div className="hidden rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-right sm:block">
-                  <p className="text-xs font-semibold text-muted-foreground">{format(new Date(), "EEEE")}</p>
-                  <p className="mt-0.5 text-lg font-bold tracking-tight">{format(new Date(), "d MMMM")}</p>
+          {/* Dashboard workspace */}
+          <div className="space-y-8">
+            <header className="flex flex-col gap-6 border-b border-border/60 pb-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <img src="/light_icon.png" alt="" className="h-10 w-10 rounded-xl object-contain" />
+                <div>
+                  <p className="text-xl font-extrabold tracking-tight text-foreground">Kaizen</p>
+                  <p className="text-xs font-medium tracking-wide text-muted-foreground">PERSONAL GROWTH WORKSPACE</p>
                 </div>
               </div>
-
-              <div className="flex flex-col justify-between gap-4 border-t border-border/50 pt-4 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center rounded-xl border border-border/60 bg-background/75 p-1 shadow-sm">
-                    <Button variant="ghost" size="icon" onClick={prevWeek} className="h-8 w-8 rounded-lg"><ChevronLeft className="h-4 w-4" /></Button>
-                    <span className="min-w-36 px-2 text-center text-sm font-semibold">{format(currentWeekStart, "d MMM")} – {format(addDays(currentWeekStart, 6), "d MMM")}</span>
-                    <Button variant="ghost" size="icon" onClick={nextWeek} className="h-8 w-8 rounded-lg"><ChevronRight className="h-4 w-4" /></Button>
-                  </div>
-                  <span className="hidden text-xs font-medium text-muted-foreground md:inline">Weekly overview</span>
+              <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+                <div className="text-left sm:text-right">
+                  <p className="text-sm font-semibold">{format(new Date(), "EEEE, d MMMM")}</p>
+                  <p className="text-xs text-muted-foreground">A little progress adds up.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" onClick={() => setIsStatusOpen(true)} className="h-10 w-10 rounded-xl border-border/60 bg-background/70" title="Your status"><UserCircle className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="icon" onClick={() => setIsMultiplayerOpen(true)} className="h-10 w-10 rounded-xl border-border/60 bg-background/70" title="Multiplayer"><Users className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="icon" onClick={() => setIsStatusOpen(true)} className="h-9 w-9 rounded-xl" title="Your status"><UserCircle className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="icon" onClick={() => setIsMultiplayerOpen(true)} className="h-9 w-9 rounded-xl" title="Multiplayer"><Users className="h-4 w-4" /></Button>
                   <AddHabitModal onAddHabit={addHabit} />
                 </div>
               </div>
-            </div>
-          </header>
+            </header>
 
-          {/* Focus panel */}
-          <section className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
-            <Card className="overflow-hidden rounded-[1.75rem] border-border/60 bg-card shadow-sm">
-              <CardContent className="relative p-5 sm:p-7">
-                <div className="pointer-events-none absolute -bottom-20 -right-12 h-56 w-56 rounded-full bg-primary/[0.055] blur-3xl" />
-                <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-                  <div className="max-w-md">
-                    <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/55 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-                      <Activity className="h-3.5 w-3.5" /> Your weekly rhythm
+            <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+              <div className="min-w-0 space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground">YOUR WEEK AT A GLANCE</p>
+                    <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Build your rhythm.</h1>
+                    <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">Small actions, repeated with intention. Pick up where you left off and make today count.</p>
+                  </div>
+                  <div className="flex items-center gap-1 self-start rounded-xl border border-border/70 bg-card p-1 sm:self-auto">
+                    <Button variant="ghost" size="icon" onClick={prevWeek} className="h-8 w-8 rounded-lg"><ChevronLeft className="h-4 w-4" /></Button>
+                    <span className="min-w-32 text-center text-xs font-semibold tabular-nums">{format(currentWeekStart, "d MMM")} – {format(addDays(currentWeekStart, 6), "d MMM")}</span>
+                    <Button variant="ghost" size="icon" onClick={nextWeek} className="h-8 w-8 rounded-lg"><ChevronRight className="h-4 w-4" /></Button>
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-2xl border border-border/70 bg-card">
+                  <div className="flex items-center justify-between border-b border-border/60 px-4 py-4 sm:px-5">
+                    <div>
+                      <h2 className="font-bold">Daily habits</h2>
+                      <p className="mt-0.5 text-xs text-muted-foreground">Check in as you go through the week</p>
                     </div>
-                    <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Progress is built in the small moments.</h2>
-                    <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">Keep showing up for the habits that matter. Every check-in is another step forward.</p>
+                    <span className="rounded-lg bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">{habits.filter((h) => !h.is_archived).length} active</span>
                   </div>
-                  <div className="flex items-end gap-3">
-                    <span className="text-5xl font-bold tracking-tighter tabular-nums">{weekCompletionPct}<span className="text-2xl text-muted-foreground">%</span></span>
-                    <span className="mb-1.5 text-xs font-semibold text-muted-foreground">week complete</span>
-                  </div>
-                </div>
-                <div className="relative mt-7">
-                  <div className="h-2.5 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-foreground/75 transition-all duration-500" style={{ width: `${Math.max(0, Math.min(100, weekCompletionPct))}%` }} />
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-xs font-medium text-muted-foreground">
-                    <span>{checksThisWeek} check-ins completed</span>
-                    <span>{habits.filter((h) => !h.is_archived).length} active habits</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-              <Card className="rounded-[1.5rem] border-border/60 bg-card/80 shadow-sm">
-                <CardContent className="flex h-full items-center justify-between gap-3 p-4 sm:p-5">
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground">Checks this week</p>
-                    <p className="mt-1 text-3xl font-bold tracking-tight tabular-nums">{checksThisWeek}</p>
-                  </div>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted text-foreground"><CheckCircle2 className="h-5 w-5" /></span>
-                </CardContent>
-              </Card>
-              <Card onClick={() => setIsStreaksModalOpen(true)} className="cursor-pointer rounded-[1.5rem] border-border/60 bg-card/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-                <CardContent className="flex h-full items-center justify-between gap-3 p-4 sm:p-5">
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground">Longest active streak</p>
-                    <p className="mt-1 text-3xl font-bold tracking-tight tabular-nums">{highestActiveStreak}<span className="ml-1 text-sm font-semibold text-muted-foreground">days</span></p>
-                  </div>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted text-foreground"><Flame className="h-5 w-5" /></span>
-                </CardContent>
-              </Card>
-            </div>
-          </section>
-
-          {/* Habit check-in workspace */}
-          <section className="space-y-4">
-            <div className="flex flex-wrap items-end justify-between gap-3 px-1">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Stay consistent</p>
-                <h2 className="mt-1 text-xl font-bold tracking-tight">Your habits</h2>
-              </div>
-              <span className="rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-xs font-semibold text-muted-foreground">{habits.filter((h) => !h.is_archived).length} in progress</span>
-            </div>
-
-            {isLoading ? (
-              <div className="flex h-52 flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-dashed border-border bg-card/40">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                <p className="text-sm font-medium text-muted-foreground">Loading your habits…</p>
-              </div>
-            ) : habits.filter((h) => !h.is_archived).length === 0 ? (
-              <div className="flex min-h-64 flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-border bg-card/40 p-8 text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground"><Activity className="h-5 w-5" /></span>
-                <h3 className="mt-4 text-base font-bold">Make room for a new routine</h3>
-                <p className="mt-1 max-w-xs text-sm text-muted-foreground">Start with something small and repeatable. Your progress will build from there.</p>
-                <div className="mt-4"><AddHabitModal onAddHabit={addHabit} /></div>
-              </div>
-            ) : (
-              habits.filter((habit) => !habit.is_archived).map((habit) => {
-                const { frozenDateStr } = getHabitStreakDetails(habit.id)
-                const completedCount = currentWeekDays.reduce((count, date) => {
-                  const dateStr = format(date, "yyyy-MM-dd")
-                  return count + (logs[`${habit.id}-${dateStr}`] ? 1 : 0)
-                }, 0)
-                const isTargetMet = completedCount >= habit.target_days
-                const IconComponent = (Icons as any)[habit.icon_name] || Activity
-
-                return (
-                  <Card key={habit.id} className={cn("overflow-hidden rounded-[1.5rem] border-border/60 bg-card/85 shadow-sm transition-all duration-200 hover:shadow-md", isTargetMet && "border-foreground/20")}>
-                    <CardContent className="p-4 sm:p-5">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-                        <div className="flex min-w-0 flex-1 items-center gap-3">
-                          <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-muted/65 text-foreground", isTargetMet && "bg-foreground text-background")}><IconComponent className="h-5 w-5" /></span>
-                          <div className="min-w-0">
-                            <h3 className="truncate text-sm font-bold sm:text-base">{habit.title}</h3>
-                            {habit.description && <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{habit.description}</p>}
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between gap-2 rounded-2xl bg-muted/35 px-3 py-2.5 lg:justify-center lg:bg-transparent lg:px-0">
-                          {currentWeekDays.map((date) => {
-                            const dateStr = format(date, "yyyy-MM-dd")
-                            const isChecked = Boolean(logs[`${habit.id}-${dateStr}`])
-                            const isFrozenDay = dateStr === frozenDateStr
-                            return (
-                              <div key={dateStr} className="flex min-w-8 flex-col items-center gap-1.5">
-                                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{format(date, "EEEEE")}</span>
-                                {isFrozenDay ? (
-                                  <button onClick={() => toggleHabit(habit.id, date)} title="Streak freeze auto-applied" className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground"><Snowflake className="h-3.5 w-3.5" /></button>
-                                ) : (
-                                  <Checkbox checked={isChecked} onCheckedChange={() => toggleHabit(habit.id, date)} className="h-7 w-7 rounded-full border-muted-foreground/30 data-[state=checked]:border-foreground data-[state=checked]:bg-foreground data-[state=checked]:text-background" />
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
-                        <div className="flex items-center justify-between gap-3 border-t border-border/50 pt-3 lg:w-36 lg:justify-end lg:border-0 lg:pt-0">
-                          <span className={cn("text-xs font-semibold tabular-nums", isTargetMet ? "text-foreground" : "text-muted-foreground")}>{completedCount}/{habit.target_days} days</span>
-                          <HabitActions habit={habit} onUpdate={updateHabit} onDelete={deleteHabit} />
-                        </div>
+                  {isLoading ? (
+                    <div className="flex h-48 items-center justify-center gap-3 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /> Loading your habits…</div>
+                  ) : habits.filter((h) => !h.is_archived).length === 0 ? (
+                    <div className="flex min-h-56 flex-col items-center justify-center px-6 py-10 text-center">
+                      <Activity className="h-7 w-7 text-muted-foreground" />
+                      <h3 className="mt-3 font-bold">Start with one small habit</h3>
+                      <p className="mt-1 max-w-xs text-sm text-muted-foreground">Add a routine you want to make part of your everyday life.</p>
+                      <div className="mt-4"><AddHabitModal onAddHabit={addHabit} /></div>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border/60">
+                      <div className="hidden grid-cols-[minmax(150px,1fr)_repeat(7,36px)_84px] items-center gap-2 bg-muted/35 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground sm:grid">
+                        <span>Routine</span>
+                        {currentWeekDays.map((date) => <span key={format(date, "yyyy-MM-dd")} className="text-center">{format(date, "EEEEE")}</span>)}
+                        <span className="text-right">Progress</span>
                       </div>
-                    </CardContent>
-                  </Card>
-                )
-              })
-            )}
-          </section>
+                      {habits.filter((habit) => !habit.is_archived).map((habit) => {
+                        const { frozenDateStr } = getHabitStreakDetails(habit.id)
+                        const completedCount = currentWeekDays.reduce((count, date) => count + (logs[`${habit.id}-${format(date, "yyyy-MM-dd")}`] ? 1 : 0), 0)
+                        const isTargetMet = completedCount >= habit.target_days
+                        const IconComponent = (Icons as any)[habit.icon_name] || Activity
+                        return (
+                          <div key={habit.id} className="grid grid-cols-1 gap-3 px-4 py-4 transition-colors hover:bg-muted/20 sm:grid-cols-[minmax(150px,1fr)_repeat(7,36px)_84px] sm:items-center sm:gap-2 sm:px-5">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground"><IconComponent className="h-4 w-4" /></span>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-semibold">{habit.title}</p>
+                                {habit.description && <p className="truncate text-xs text-muted-foreground">{habit.description}</p>}
+                              </div>
+                              <div className="sm:hidden"><HabitActions habit={habit} onUpdate={updateHabit} onDelete={deleteHabit} /></div>
+                            </div>
+                            <div className="flex items-center justify-between rounded-xl bg-muted/35 px-2 py-2 sm:contents">
+                              {currentWeekDays.map((date) => {
+                                const dateStr = format(date, "yyyy-MM-dd")
+                                const isChecked = Boolean(logs[`${habit.id}-${dateStr}`])
+                                const isFrozenDay = dateStr === frozenDateStr
+                                return (
+                                  <div key={dateStr} className="flex flex-col items-center gap-1.5">
+                                    <span className="text-[9px] font-semibold text-muted-foreground sm:hidden">{format(date, "EEEEE")}</span>
+                                    {isFrozenDay ? <span title="Streak freeze auto-applied" className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground"><Snowflake className="h-3.5 w-3.5" /></span> : <Checkbox checked={isChecked} onCheckedChange={() => toggleHabit(habit.id, date)} className="h-7 w-7 rounded-full border-muted-foreground/30 data-[state=checked]:border-foreground data-[state=checked]:bg-foreground data-[state=checked]:text-background" />}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                            <div className="flex items-center justify-between sm:justify-end sm:gap-2">
+                              <span className={cn("text-xs font-semibold tabular-nums", isTargetMet ? "text-foreground" : "text-muted-foreground")}>{completedCount}/{habit.target_days}</span>
+                              <div className="hidden sm:block"><HabitActions habit={habit} onUpdate={updateHabit} onDelete={deleteHabit} /></div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
 
-          {/* Weekly reflection */}
-          <section className="space-y-4 border-t border-border/50 pt-7">
-            <div className="px-1">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Pause and reflect</p>
-              <h2 className="mt-1 text-xl font-bold tracking-tight">A moment for your week</h2>
-            </div>
-            {isSavingReview && <p className="px-1 text-xs font-medium text-muted-foreground">Saving your reflection…</p>}
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card className="rounded-[1.5rem] border-border/60 bg-card/75 shadow-sm">
-                <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm font-bold"><Star className="h-4 w-4 text-muted-foreground" /> A win worth remembering</CardTitle></CardHeader>
-                <CardContent><Textarea placeholder="What went well this week?" className="min-h-28 resize-none rounded-xl border-border/60 bg-background/60 text-sm leading-relaxed" value={sundayReview.one_percent_win} onChange={(e) => setSundayReview((prev) => ({ ...prev, one_percent_win: e.target.value }))} onBlur={() => saveWeeklyReview(sundayReview.one_percent_win, sundayReview.adjustments)} /></CardContent>
-              </Card>
-              <Card className="rounded-[1.5rem] border-border/60 bg-card/75 shadow-sm">
-                <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm font-bold"><RefreshCw className="h-4 w-4 text-muted-foreground" /> One thing to improve</CardTitle></CardHeader>
-                <CardContent><Textarea placeholder="What would make next week smoother?" className="min-h-28 resize-none rounded-xl border-border/60 bg-background/60 text-sm leading-relaxed" value={sundayReview.adjustments} onChange={(e) => setSundayReview((prev) => ({ ...prev, adjustments: e.target.value }))} onBlur={() => saveWeeklyReview(sundayReview.one_percent_win, sundayReview.adjustments)} /></CardContent>
-              </Card>
-            </div>
-          </section>
+                <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div><h2 className="font-bold">Consistency over time</h2><p className="mt-0.5 text-xs text-muted-foreground">Your effort, one day at a time</p></div>
+                    <Activity className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <Heatmap logs={logs} />
+                </div>
+              </div>
 
-          {/* Consistency history */}
-          <section className="space-y-3 border-t border-border/50 pt-7">
-            <div className="px-1">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">The bigger picture</p>
-              <h2 className="mt-1 text-xl font-bold tracking-tight">Your consistency</h2>
-            </div>
-            <div className="rounded-[1.5rem] border border-border/60 bg-card/65 p-4 shadow-sm sm:p-5">
-              <Heatmap logs={logs} />
-            </div>
-          </section>
+              <aside className="space-y-4">
+                <div className="rounded-2xl border border-border/70 bg-card p-5">
+                  <p className="text-xs font-bold tracking-wide text-muted-foreground">WEEKLY COMPLETION</p>
+                  <div className="mt-4 flex items-end gap-2">
+                    <span className="text-5xl font-bold tracking-tighter tabular-nums">{weekCompletionPct}</span><span className="mb-1 text-xl font-semibold text-muted-foreground">%</span>
+                  </div>
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-foreground/80 transition-all duration-500" style={{ width: `${Math.max(0, Math.min(100, weekCompletionPct))}%` }} /></div>
+                  <p className="mt-3 text-xs text-muted-foreground">{checksThisWeek} check-ins completed this week</p>
+                  <div className="mt-5 grid grid-cols-2 gap-3 border-t border-border/60 pt-4">
+                    <div><p className="text-2xl font-bold tabular-nums">{habits.filter((h) => !h.is_archived).length}</p><p className="text-[11px] text-muted-foreground">Active habits</p></div>
+                    <button onClick={() => setIsStreaksModalOpen(true)} className="text-left"><p className="text-2xl font-bold tabular-nums">{highestActiveStreak}<span className="ml-1 text-xs font-semibold text-muted-foreground">d</span></p><p className="text-[11px] text-muted-foreground">Best active streak</p></button>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-border/70 bg-card p-5">
+                  <div className="flex items-center gap-2"><Star className="h-4 w-4 text-muted-foreground" /><h2 className="text-sm font-bold">Weekly reflection</h2></div>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Take a moment to notice what worked and what you want to adjust.</p>
+                  {isSavingReview && <p className="mt-2 text-[11px] text-muted-foreground">Saving…</p>}
+                  <div className="mt-4 space-y-4">
+                    <div><label className="mb-1.5 block text-xs font-semibold">A win worth remembering</label><Textarea placeholder="What went well?" className="min-h-24 resize-none rounded-xl bg-background/60 text-sm" value={sundayReview.one_percent_win} onChange={(e) => setSundayReview((prev) => ({ ...prev, one_percent_win: e.target.value }))} onBlur={() => saveWeeklyReview(sundayReview.one_percent_win, sundayReview.adjustments)} /></div>
+                    <div><label className="mb-1.5 block text-xs font-semibold">One thing to improve</label><Textarea placeholder="What could be smoother?" className="min-h-24 resize-none rounded-xl bg-background/60 text-sm" value={sundayReview.adjustments} onChange={(e) => setSundayReview((prev) => ({ ...prev, adjustments: e.target.value }))} onBlur={() => saveWeeklyReview(sundayReview.one_percent_win, sundayReview.adjustments)} /></div>
+                  </div>
+                </div>
+              </aside>
+            </section>
+          </div>
+
         </div>
       </div>
     )
