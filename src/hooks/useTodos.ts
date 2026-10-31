@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useId, useState } from "react"
 import { supabase } from "@/lib/supabase"
 
 export interface Todo {
@@ -52,6 +52,7 @@ function rowToTodo(row: TodoRow): Todo {
  *     with check (auth.uid() = user_id);
  */
 export function useTodos() {
+  const channelId = useId().replace(/:/g, "")
   const [todos, setTodos] = useState<Todo[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -97,7 +98,7 @@ export function useTodos() {
 
     // Keep in sync across tabs/devices.
     const channel = supabase
-      .channel("todos-changes")
+      .channel(`todos-changes-${channelId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "daily_todos" },
@@ -126,7 +127,7 @@ export function useTodos() {
       active = false
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [channelId])
 
   const addTodo = useCallback(
     async (title: string, description: string, date: string) => {
