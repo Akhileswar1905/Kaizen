@@ -78,7 +78,8 @@ export function DashboardView({
     return activeHabits.filter((habit) => logs[habit.id + "-" + key]).length
   })
   const weeklyCheckins = weeklyCounts.reduce((sum, count) => sum + count, 0)
-  const weeklyTarget = activeHabits.reduce((sum, habit) => sum + Math.min(7, Math.max(0, habit.target_days || 0)), 0)
+  const elapsedWeekDays = Math.min(7, Math.max(1, today.getDay() === 0 ? 7 : today.getDay()))
+  const weeklyTarget = activeHabits.reduce((sum, habit) => sum + Math.round((Math.min(7, Math.max(0, habit.target_days || 0)) * elapsedWeekDays) / 7), 0)
   const weeklyConsistency = weeklyTarget ? Math.min(100, Math.round((weeklyCheckins / weeklyTarget) * 100)) : 0
   const maxWeeklyCount = Math.max(1, ...weeklyCounts)
   const learningDone = learningItems.filter((item) => item.is_completed).length
@@ -216,7 +217,7 @@ export function DashboardView({
                   return <div key={format(day, "yyyy-MM-dd")} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2"><span className="text-[10px] tabular-nums text-muted-foreground">{count || ""}</span><div className="w-full rounded-t-md bg-muted" style={{ height: height + "%" }}><div className="h-full w-full rounded-t-md bg-foreground/65" /></div><span className="text-[10px] text-muted-foreground">{format(day, "EEEEE")}</span></div>
                 })}
               </div>
-              <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3 text-xs text-muted-foreground"><span>{weeklyConsistency}% of weekly habit targets</span><span>{activeHabits.length} active habits</span></div>
+              <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3 text-xs text-muted-foreground"><span>{weeklyConsistency}% of expected check-ins so far</span><span>{activeHabits.length} active habits</span></div>
             </div>
 
             <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5">
