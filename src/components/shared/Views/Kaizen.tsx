@@ -136,31 +136,31 @@ export default function KaizenTracker() {
 
   const renderContent = () => {
     if (activeView === "dsa") {
-      return <DsaSheet onBack={() => setActiveView("dashboard")} />
+      return <div className="kaizen-page kaizen-page--dsa"><DsaSheet onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "journal") {
-      return <JournalView onBack={() => setActiveView("dashboard")} />
+      return <div className="kaizen-page kaizen-page--journal"><JournalView onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "finance") {
-      return <FinanceView onBack={() => setActiveView("dashboard")} />
+      return <div className="kaizen-page kaizen-page--finance"><FinanceView onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "system-design") {
-      return <SystemDesignHub onBack={() => setActiveView("dashboard")} />
+      return <div className="kaizen-page kaizen-page--system-design"><SystemDesignHub onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "notes") {
-      return <NotesTracker onBack={() => setActiveView("dashboard")} />
+      return <div className="kaizen-page kaizen-page--notes"><NotesTracker onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "workout-tracker") {
-      return <WorkoutTracker onBack={() => setActiveView("dashboard")} />
+      return <div className="kaizen-page kaizen-page--workout"><WorkoutTracker onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "planner") {
-      return <PlannerView onBack={() => setActiveView("dashboard")} />
+      return <div className="kaizen-page kaizen-page--planner"><PlannerView onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "time-audit") {
-      return <TimeAuditView onBack={() => setActiveView("dashboard")} />
+      return <div className="kaizen-page kaizen-page--time-audit"><TimeAuditView onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "learning-checklist") {
-      return <LearningChecklistView onBack={() => setActiveView("dashboard")} />
+      return <div className="kaizen-page kaizen-page--learning"><LearningChecklistView onBack={() => setActiveView("dashboard")} /></div>
     }
 
     return (
