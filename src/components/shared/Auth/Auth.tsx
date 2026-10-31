@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import type { FormEvent } from "react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
@@ -14,6 +15,7 @@ import {
 import { Loader2 } from "lucide-react"
 
 export function Auth() {
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState("")
@@ -52,7 +54,7 @@ export function Auth() {
         if (signUpError) throw signUpError
 
         if (data.session) {
-          setSuccess("Your account is ready. You are now signed in.")
+          navigate("/", { replace: true })
         } else {
           setSuccess(
             "Account created. Check your inbox (and spam folder) for the confirmation link before signing in."
@@ -64,7 +66,8 @@ export function Auth() {
           password,
         })
         if (signInError) throw signInError
-        // AuthProvider listens for the Supabase auth event and updates the app session.
+        // AuthProvider receives the Supabase auth event; send the user to the dashboard.
+        navigate("/", { replace: true })
       }
     } catch (cause: unknown) {
       const message =
