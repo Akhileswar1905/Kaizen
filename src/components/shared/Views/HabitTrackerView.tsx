@@ -8,8 +8,8 @@ import { AddHabitModal } from "../Habits/AddHabit"
 import { HabitActions } from "../Habits/HabitActions"
 import * as Icons from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
 import type { Habit } from "@/hooks/useTracker"
+import type { Dispatch, SetStateAction } from "react"
 
 type HabitTrackerViewProps = {
   habits: Habit[]
@@ -23,10 +23,10 @@ type HabitTrackerViewProps = {
   weekCompletionPct: number
   currentWeekDays: Date[]
   addHabit: (habit: any) => void
-  updateHabit: (habit: Habit) => void
+  updateHabit: (habitId: string, updates: any) => void
   deleteHabit: (habitId: string) => void
   sundayReview: { one_percent_win: string; adjustments: string }
-  setSundayReview: React.Dispatch<React.SetStateAction<{ one_percent_win: string; adjustments: string }>>
+  setSundayReview: Dispatch<SetStateAction<{ one_percent_win: string; adjustments: string }>>
   saveWeeklyReview: (onePercentWin: string, adjustments: string) => void
   isSavingReview: boolean
   getHabitStreakDetails: (habitId: string) => { streak: number; freezeUsed: boolean; frozenDateStr: string | null }
@@ -44,13 +44,11 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
     getHabitStreakDetails, highestActiveStreak, onOpenStatus, onOpenMultiplayer,
     onOpenStreaks,
   } = props
-  const [showArchived, setShowArchived] = useState(false)
-  const visibleHabits = habits.filter((habit) => showArchived ? habit.is_archived : !habit.is_archived)
 
   return (
       <div className="kaizen-desktop flex min-h-screen justify-center px-3 py-4 font-sans text-foreground antialiased sm:px-6 sm:py-8">
         <div className="kaizen-window w-full max-w-5xl space-y-7 sm:space-y-9">
-          {/* Dashboard workspace */}
+          {/* Dedicated habit tracking workspace */}
           <div className="space-y-8">
             <header className="flex flex-col gap-6 border-b border-border/60 pb-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
@@ -66,8 +64,8 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
                   <p className="text-xs text-muted-foreground">A little progress adds up.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" onClick={() => setIsStatusOpen(true)} className="h-9 w-9 rounded-xl" title="Your status"><UserCircle className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="icon" onClick={() => setIsMultiplayerOpen(true)} className="h-9 w-9 rounded-xl" title="Multiplayer"><Users className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="icon" onClick={onOpenStatus} className="h-9 w-9 rounded-xl" title="Your status"><UserCircle className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="icon" onClick={onOpenMultiplayer} className="h-9 w-9 rounded-xl" title="Multiplayer"><Users className="h-4 w-4" /></Button>
                   <AddHabitModal onAddHabit={addHabit} />
                 </div>
               </div>
@@ -170,7 +168,7 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
                   <p className="mt-3 text-xs text-muted-foreground">{checksThisWeek} check-ins completed this week</p>
                   <div className="mt-5 grid grid-cols-2 gap-3 border-t border-border/60 pt-4">
                     <div><p className="text-2xl font-bold tabular-nums">{habits.filter((h) => !h.is_archived).length}</p><p className="text-[11px] text-muted-foreground">Active habits</p></div>
-                    <button onClick={() => setIsStreaksModalOpen(true)} className="text-left"><p className="text-2xl font-bold tabular-nums">{highestActiveStreak}<span className="ml-1 text-xs font-semibold text-muted-foreground">d</span></p><p className="text-[11px] text-muted-foreground">Best active streak</p></button>
+                    <button onClick={onOpenStreaks} className="text-left"><p className="text-2xl font-bold tabular-nums">{highestActiveStreak}<span className="ml-1 text-xs font-semibold text-muted-foreground">d</span></p><p className="text-[11px] text-muted-foreground">Best active streak</p></button>
                   </div>
                 </div>
 
