@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   BicepsFlexed,
@@ -14,14 +14,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-// Menu items whose code and routes stay in place but shouldn't be reachable
-// from the floating menu right now. Remove an id here to bring it back.
-const HIDDEN_MENU_ITEMS = [
-  "journal",
-  "system-design",
-  "workout-tracker",
-  "time-audit",
-] as const
+const HIDDEN_MENU_ITEMS = ["journal", "system-design", "workout-tracker", "time-audit"] as const
 
 interface FloatingMenuProps {
   onOpenDSA: () => void
@@ -47,212 +40,59 @@ export function FloatingMenu({
   onOpenLearningChecklist,
 }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
 
-  // Close menu automatically if user clicks outside of it
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
+  const items = [
+    { label: "DSA", icon: GraduationCap, action: onOpenDSA },
+    { label: "Finance", icon: Wallet, action: onOpenFinance },
+    { label: "Notes", icon: StickyNote, action: () => onOpenNotes?.() },
+    { label: "Planner", icon: Calendar, action: () => onOpenPlanner?.() },
+    { label: "Learning", icon: ListChecks, action: () => onOpenLearningChecklist?.() },
+    ...(!HIDDEN_MENU_ITEMS.includes("journal") ? [{ label: "Journal", icon: BookOpen, action: onOpenJournal }] : []),
+    ...(!HIDDEN_MENU_ITEMS.includes("system-design") ? [{ label: "System design", icon: Book, action: onOpenSystemDesign }] : []),
+    ...(!HIDDEN_MENU_ITEMS.includes("workout-tracker") ? [{ label: "Workout", icon: BicepsFlexed, action: () => onOpenWorkoutTracker?.() }] : []),
+    ...(!HIDDEN_MENU_ITEMS.includes("time-audit") ? [{ label: "Time audit", icon: Grid2x2, action: () => onOpenTimeAudit?.() }] : []),
+  ]
 
   return (
-    <div
-      ref={menuRef}
-      className="pointer-events-none fixed right-4 bottom-4 z-50 flex flex-col items-end gap-3 sm:right-6 sm:bottom-6"
-    >
-      {/* Expanded Menu Stack */}
-      <div
-        className={cn(
-          "pointer-events-none flex origin-bottom flex-col items-end gap-3 transition-all duration-300 ease-out",
-          isOpen
-            ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-            : "translate-y-4 scale-75 opacity-0"
-        )}
-      >
-        {/* Option 1: DSA Problemsheet */}
-        <div className="group flex items-center gap-3">
-          <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-            DSA Problemsheet
-          </span>
+    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-3 sm:bottom-6">
+      <div className="kaizen-dock pointer-events-auto flex max-w-[calc(100vw-1.5rem)] items-end gap-1.5 rounded-2xl p-2 sm:gap-2 sm:p-2.5">
+        {items.map((item) => (
           <Button
-            variant="secondary"
+            key={item.label}
+            variant="ghost"
             size="icon"
-            className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              onOpenDSA()
-              setIsOpen(false)
-            }}
+            title={item.label}
+            aria-label={item.label}
+            onClick={item.action}
+            className={cn(
+              "h-10 w-10 shrink-0 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary sm:h-12 sm:w-12",
+              "focus-visible:ring-2 focus-visible:ring-primary"
+            )}
           >
-            <GraduationCap className="h-5 w-5" />
+            <item.icon className="h-5 w-5 sm:h-[1.35rem] sm:w-[1.35rem]" />
           </Button>
-        </div>
-
-        {/* Option 2: Journal */}
-        {!HIDDEN_MENU_ITEMS.includes("journal") && (
-          <div className="group flex items-center gap-3">
-            <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-              Journal
-            </span>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-              onClick={() => {
-                onOpenJournal()
-                setIsOpen(false)
-              }}
-            >
-              <BookOpen className="h-5 w-5" />
-            </Button>
-          </div>
-        )}
-
-        {/* Option 3: Finance */}
-        <div className="group flex items-center gap-3">
-          <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-            Finance & Learning
-          </span>
-          <Button
-            variant="secondary"
-            size="icon"
-            className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              onOpenFinance()
-              setIsOpen(false)
-            }}
-          >
-            <Wallet className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Option 4: System Design */}
-        {!HIDDEN_MENU_ITEMS.includes("system-design") && (
-          <div className="group flex items-center gap-3">
-            <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-              System Design
-            </span>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-              onClick={() => {
-                onOpenSystemDesign()
-                setIsOpen(false)
-              }}
-            >
-              <Book className="h-5 w-5" />
-            </Button>
-          </div>
-        )}
-
-        {/* Option 5: Notes */}
-        <div className="group flex items-center gap-3">
-          <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-            Notes
-          </span>
-          <Button
-            variant="secondary"
-            size="icon"
-            className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              onOpenNotes?.()
-              setIsOpen(false)
-            }}
-          >
-            <StickyNote className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Option 6: Workout Tracker */}
-        {!HIDDEN_MENU_ITEMS.includes("workout-tracker") && (
-          <div className="group flex items-center gap-3">
-            <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-              Workout Tracker
-            </span>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-              onClick={() => {
-                onOpenWorkoutTracker?.()
-                setIsOpen(false)
-              }}
-            >
-              <BicepsFlexed className="h-5 w-5" />
-            </Button>
-          </div>
-        )}
-
-        {/* Option 7: Planner */}
-        <div className="group flex items-center gap-3">
-          <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-            Planner
-          </span>
-          <Button
-            variant="secondary"
-            size="icon"
-            className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              onOpenPlanner?.()
-              setIsOpen(false)
-            }}
-          >
-            <Calendar className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Learning checklist */}
-        <div className="group flex items-center gap-3">
-          <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-            Learning Checklist
-          </span>
-          <Button
-            variant="secondary"
-            size="icon"
-            className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              onOpenLearningChecklist?.()
-              setIsOpen(false)
-            }}
-          >
-            <ListChecks className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Option 8: Time Audit */}
-        {!HIDDEN_MENU_ITEMS.includes("time-audit") && (
-          <div className="group flex items-center gap-3">
-            <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-              Time Audit
-            </span>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-              onClick={() => {
-                onOpenTimeAudit?.()
-                setIsOpen(false)
-              }}
-            >
-              <Grid2x2 className="h-5 w-5" />
-            </Button>
-          </div>
-        )}
+        ))}
+        <div className="mx-0.5 h-7 w-px self-center bg-border/80" />
+        <Button
+          variant="ghost"
+          size="icon"
+          title="More"
+          aria-label="More"
+          aria-expanded={isOpen}
+          onClick={() => setIsOpen((open) => !open)}
+          className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary sm:h-12 sm:w-12"
+        >
+          <MenuIcon className="h-5 w-5" />
+        </Button>
       </div>
-
-      {/* Main Trigger FAB */}
-      <Button
-        size="icon"
-        className="pointer-events-auto h-14 w-14 rounded-full shadow-xl transition-all duration-300 ease-in-out sm:h-16 sm:w-16"
-        onClick={() => setIsOpen((prev) => !prev)}
-      >
-        <MenuIcon className="h-6 w-6" />
-      </Button>
+      {isOpen && (
+        <div className="kaizen-dock pointer-events-auto absolute right-4 bottom-16 flex items-center gap-2 rounded-xl p-2 sm:right-[calc(50%-14rem)] sm:bottom-20">
+          <span className="px-2 text-xs font-semibold text-muted-foreground">Kaizen apps</span>
+          <Button variant="ghost" size="sm" onClick={() => { onOpenDSA(); setIsOpen(false) }}>DSA</Button>
+          <Button variant="ghost" size="sm" onClick={() => { onOpenFinance(); setIsOpen(false) }}>Finance</Button>
+          <Button variant="ghost" size="sm" onClick={() => { onOpenNotes?.(); setIsOpen(false) }}>Notes</Button>
+        </div>
+      )}
     </div>
   )
 }
