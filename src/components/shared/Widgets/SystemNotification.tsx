@@ -17,12 +17,21 @@ export function SystemNotification({
   isOpen,
   onClose,
 }: SystemNotificationProps) {
+  const isLevelUp = Boolean(levelUp)
+
   useEffect(() => {
-    if (isOpen) {
-      // Keep level-up screens visible slightly longer for impact
-      const duration = levelUp ? 6000 : 4500
-      const timer = setTimeout(onClose, duration)
-      return (
+    if (!isOpen) return
+
+    // Keep level-up screens visible slightly longer for impact.
+    const duration = isLevelUp ? 6000 : 4500
+    const timer = window.setTimeout(onClose, duration)
+
+    return () => window.clearTimeout(timer)
+  }, [isOpen, isLevelUp, onClose])
+
+  if (!isOpen) return null
+
+  return (
     <div
       className={cn(
         "fixed z-[100] transition-all duration-300",
@@ -60,7 +69,7 @@ export function SystemNotification({
           </div>
 
           <p className={cn("text-sm font-semibold leading-relaxed text-foreground", isLevelUp && "text-base")}>
-            {isLevelUp ? message : message}
+            {message}
           </p>
 
           {stat && (
@@ -70,7 +79,7 @@ export function SystemNotification({
             </div>
           )}
 
-          {levelUp && (
+          {levelUp !== undefined && levelUp > 0 && (
             <div className="rounded-2xl border border-border/70 bg-muted/35 px-5 py-6">
               <span className="block text-4xl font-black tracking-tight text-foreground sm:text-5xl">
                 LV. {levelUp}
@@ -83,4 +92,5 @@ export function SystemNotification({
         </div>
       </div>
     </div>
-  )}
+  )
+}
