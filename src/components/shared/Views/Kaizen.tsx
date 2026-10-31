@@ -165,14 +165,9 @@ export default function KaizenTracker() {
 
     return (
       <div className="kaizen-desktop flex min-h-screen justify-center px-3 py-4 font-sans text-foreground antialiased sm:px-6 sm:py-8">
-        <div className="kaizen-window w-full max-w-5xl space-y-8 sm:space-y-10">
-          <div className="kaizen-titlebar">
-            <div className="kaizen-traffic-lights" aria-hidden="true"><span /><span /><span /></div>
-            <span className="ml-2">Kaizen</span>
-            <span className="ml-auto text-[11px] font-medium opacity-70">A little better, every day</span>
-          </div>
+        <div className="kaizen-window w-full max-w-5xl space-y-7 sm:space-y-9">
           {/* Header Section */}
-          <header className="flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
+          <header className="flex flex-col gap-4 border-b border-border/60 pb-7 sm:flex-row sm:items-center sm:justify-between">
             {/* Left Column: Branding */}
             <div className="flex items-center gap-4">
               <div className="group relative">
@@ -187,7 +182,7 @@ export default function KaizenTracker() {
                 <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                   Kaizen
                 </h1>
-                <p className="mt-0.5 text-sm font-medium text-muted-foreground/80">
+                <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
                   Your personal space to make progress
                 </p>
               </div>
@@ -195,7 +190,7 @@ export default function KaizenTracker() {
 
             {/* Right Column: Dynamic Action Control Deck */}
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
-              <div className="flex flex-1 items-center justify-between rounded-xl border border-border/60 bg-card/40 p-1.5 shadow-sm backdrop-blur-sm sm:flex-initial sm:gap-2">
+              <div className="flex flex-1 items-center justify-between rounded-xl border border-border/60 bg-card/75 p-1.5 shadow-sm backdrop-blur-xl sm:flex-initial sm:gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -204,7 +199,7 @@ export default function KaizenTracker() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="flex items-center gap-1.5 px-3 text-xs font-semibold tracking-tight text-foreground/90 sm:text-sm">
+                <span className="flex items-center gap-1.5 px-3 text-sm font-bold tracking-tight text-foreground sm:text-base">
                   <CalendarDays className="h-3.5 w-3.5 text-muted-foreground/70" />
                   {format(currentWeekStart, "d MMM")} –{" "}
                   {format(addDays(currentWeekStart, 6), "d MMM")}
@@ -285,7 +280,7 @@ export default function KaizenTracker() {
                   <h2 className="mb-1 text-3xl font-black tracking-tight text-foreground md:text-4xl">
                     {stat.value}
                   </h2>
-                  <p className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase md:text-xs">
+                  <p className="text-xs font-bold tracking-wide text-foreground/75 uppercase md:text-sm">
                     {stat.label}
                   </p>
                 </CardContent>
@@ -296,10 +291,10 @@ export default function KaizenTracker() {
           {/* Habits List */}
           <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
-              <h2 className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+              <h2 className="text-sm font-bold tracking-wide text-foreground/80 uppercase">
                 Active Frameworks
               </h2>
-              <span className="text-xs font-medium text-muted-foreground/60">
+              <span className="text-sm font-semibold text-muted-foreground">
                 {habits.filter((h) => !h.is_archived).length} Tracking
               </span>
             </div>
@@ -375,13 +370,13 @@ export default function KaizenTracker() {
                             <h3 className="text-sm font-bold tracking-tight text-foreground transition-colors group-hover:text-primary md:text-base">
                               {habit.title}
                             </h3>
-                            <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground/80">
+                            <p className="line-clamp-2 text-sm font-medium leading-relaxed text-muted-foreground">
                               {habit.description}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex w-full max-w-md flex-1 items-center justify-between rounded-xl border border-border/30 bg-muted/30 p-2.5 md:w-auto md:border-0 md:bg-transparent md:p-0">
+                        <div className="flex w-full max-w-md flex-1 items-center justify-between rounded-xl border border-border/50 bg-muted/45 p-3 md:w-auto md:border-0 md:bg-transparent md:p-0">
                           {currentWeekDays.map((date) => {
                             const dateStr = format(date, "yyyy-MM-dd")
                             const dayName = format(date, "EEE")
@@ -398,7 +393,7 @@ export default function KaizenTracker() {
                               >
                                 <span
                                   className={cn(
-                                    "text-[10px] font-bold tracking-wider uppercase transition-colors",
+                                    "text-xs font-bold tracking-wide uppercase transition-colors",
                                     isChecked
                                       ? "text-primary/90"
                                       : isFrozenDay
