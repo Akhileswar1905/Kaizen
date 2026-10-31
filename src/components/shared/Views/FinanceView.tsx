@@ -1,4 +1,5 @@
-import { Wallet, BookOpen } from "lucide-react"
+import { Wallet, BookOpen, TrendingUp } from "lucide-react"
+import { IncomeTracker } from "../Finance/IncomeTracker"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ExpenseTracker } from "../Finance/ExpenseTracker"
 import { VarsityTracker } from "../Finance/FinanceCourse"
@@ -10,12 +11,13 @@ export function FinanceView() {
         {/* Header */}
         <header className="flex items-center gap-3 border-b border-border/60 pb-5">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-foreground"><Wallet className="h-5 w-5" /></div>
-          <div><h1 className="text-2xl font-extrabold tracking-tight">Finance & Learning</h1><p className="text-sm text-muted-foreground">Track expenses and course progress</p></div>
+          <div><h1 className="text-2xl font-extrabold tracking-tight">Finance</h1><p className="text-sm text-muted-foreground">Manage income, expenses and your monthly budget</p></div>
         </header>
 
         {/* Tabs for switching between Expenses and Courses */}
         <Tabs defaultValue="expenses" className="w-full">
-          <TabsList className="mb-6 grid w-full grid-cols-2">
+          <TabsList className="mb-6 grid h-auto w-full grid-cols-3">
+            <TabsTrigger value="income" className="flex gap-2"><TrendingUp className="h-4 w-4" /> Income</TabsTrigger>
             <TabsTrigger value="expenses" className="flex gap-2">
               <Wallet className="h-4 w-4" /> Expenses
             </TabsTrigger>
@@ -23,6 +25,8 @@ export function FinanceView() {
               <BookOpen className="h-4 w-4" /> Varsity Course
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="income" className="mt-0"><IncomeTracker /></TabsContent>
 
           <TabsContent value="expenses" className="mt-0">
             <ExpenseTracker />
