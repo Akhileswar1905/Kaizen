@@ -12,8 +12,6 @@ import {
   UserCircle,
   CheckCircle2,
   Flame,
-  Percent,
-  CalendarDays,
   X,
   Users,
   Snowflake, // Added Snowflake icon for the streak freeze
