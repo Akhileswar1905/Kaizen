@@ -193,7 +193,8 @@
      * macOS-like system typography
      */
     font-family: "Comic Neue", "Comic Sans MS", cursive;
-    letter-spacing: 0;
+    font-weight: 600;
+    letter-spacing: 0.005em;
     background: var(--background);
   }
 
@@ -281,11 +282,11 @@
 .kaizen-window {
   position: relative;
   isolation: isolate;
-  padding: 0.9rem clamp(1rem, 3vw, 2.25rem) 2rem;
+  padding: clamp(1.1rem, 3vw, 2rem) clamp(1rem, 3vw, 2.25rem) 2rem;
   border: 1px solid color-mix(in oklch, var(--border) 78%, transparent);
-  border-radius: 1.55rem;
+  border-radius: 1.75rem;
   background: color-mix(in oklch, var(--card) 88%, transparent);
-  box-shadow: 0 28px 90px -48px oklch(0.16 0.025 260 / 0.38), 0 2px 10px oklch(0.16 0.025 260 / 0.04);
+  box-shadow: 0 32px 100px -52px oklch(0.16 0.025 260 / 0.34), 0 4px 16px oklch(0.16 0.025 260 / 0.045);
   backdrop-filter: blur(28px) saturate(1.25);
 }
 .dark .kaizen-window { background: color-mix(in oklch, var(--card) 88%, transparent); box-shadow: 0 28px 90px -42px oklch(0 0 0 / 0.8); }
@@ -302,3 +303,15 @@
 .kaizen-habit-card { border-color:color-mix(in oklch, var(--border) 75%, transparent) !important; background:color-mix(in oklch, var(--card) 86%, transparent) !important; box-shadow:0 8px 28px -22px oklch(0.12 0.02 260 / 0.3); }
 .kaizen-auth-window { border:1px solid color-mix(in oklch, var(--border) 78%, transparent); border-radius:1.5rem; background:color-mix(in oklch, var(--card) 88%, transparent); box-shadow:0 28px 90px -48px oklch(0.16 0.025 260 / 0.45); backdrop-filter:blur(28px) saturate(1.25); }
 @media (max-width:640px) { .kaizen-window { padding:0.75rem 0.85rem 1.5rem; border-radius:1.2rem; } .kaizen-titlebar { margin-bottom:0.8rem; } }
+
+/* Readability and refined desktop surfaces */
+.kaizen-desktop { min-height:100svh; padding-bottom:7rem; }
+.kaizen-window { margin-inline:auto; min-height:calc(100svh - 4rem); }
+.kaizen-stat-card { border-radius:1.35rem !important; background:color-mix(in oklch, var(--card) 94%, transparent) !important; }
+.kaizen-habit-card { border-radius:1.25rem !important; background:color-mix(in oklch, var(--card) 95%, transparent) !important; }
+.kaizen-dock { border-radius:1.35rem; padding:0.55rem; background:color-mix(in oklch, var(--card) 92%, transparent); box-shadow:0 18px 48px -22px oklch(0.12 0.02 260 / 0.32); }
+.kaizen-dock button { color:var(--foreground); font-weight:700; }
+.kaizen-dock button:hover { transform:translateY(-3px) scale(1.04); background:color-mix(in oklch, var(--primary) 12%, var(--card)); }
+button, input, textarea, select, label, p { font-weight:600; }
+h1,h2,h3,h4,h5,h6 { font-weight:700; letter-spacing:-0.015em; }
+@media (prefers-reduced-motion: reduce) { .kaizen-dock button { transition:none; } .kaizen-dock button:hover { transform:none; } }
