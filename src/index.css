@@ -447,3 +447,88 @@ h1,h2,h3,h4,h5,h6 { font-weight:700; letter-spacing:-0.015em; }
 @media (max-width:1023px) { .learning-track-panel { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0.35rem; } .learning-track-panel > div:first-child { grid-column:1/-1; } }
 @media (max-width:560px) { .learning-track-panel { grid-template-columns:1fr; } .learning-hero { border-radius:1.35rem; } .learning-task-panel { border-radius:1.2rem; } .learning-task-row { gap:0.55rem; padding:0.75rem 0.55rem; } }
 @media (prefers-reduced-motion:reduce) { .learning-shell { animation:none; } .learning-track-option,.learning-task-row { transition:none; } }
+
+/* Dark mode: keep the learning workspace calm and nearly monochrome.
+   Light mode intentionally keeps its existing warmer accent palette. */
+.dark .learning-page {
+  --primary: oklch(0.79 0.012 250);
+  background:
+    radial-gradient(ellipse at 8% 0%, oklch(0.78 0.012 250 / 0.045), transparent 34rem),
+    var(--background);
+}
+.dark .learning-hero {
+  background: linear-gradient(118deg, color-mix(in oklch, var(--card) 97%, transparent), color-mix(in oklch, white 2.5%, var(--card)));
+  box-shadow: 0 22px 60px -42px oklch(0 0 0 / 0.55);
+}
+.dark .learning-hero-orb--one,
+.dark .learning-hero-orb--two {
+  background: radial-gradient(circle, oklch(0.8 0.008 250 / 0.055), transparent 70%);
+}
+.dark .learning-progress-orbit {
+  box-shadow: 0 12px 36px -22px oklch(0 0 0 / 0.65);
+}
+.dark .learning-metric,
+.dark .learning-track-panel,
+.dark .learning-task-panel {
+  border-color: oklch(1 0 0 / 0.085);
+  background: color-mix(in oklch, var(--card) 94%, transparent);
+  box-shadow: 0 16px 42px -34px oklch(0 0 0 / 0.6);
+}
+.dark .learning-metric-icon,
+.dark .learning-metric-icon--green,
+.dark .learning-metric-icon--amber {
+  color: oklch(0.78 0.008 250);
+  background: oklch(1 0 0 / 0.065);
+}
+.dark .learning-track-option.is-active {
+  border-color: oklch(1 0 0 / 0.12);
+  background: oklch(1 0 0 / 0.055);
+  box-shadow: inset 2px 0 0 oklch(0.78 0.008 250 / 0.72);
+}
+.dark .learning-track-symbol,
+.dark .learning-track-symbol--0,
+.dark .learning-track-symbol--1,
+.dark .learning-track-symbol--2,
+.dark .learning-track-symbol--3 {
+  color: oklch(0.76 0.008 250);
+  background: oklch(1 0 0 / 0.065);
+}
+.dark .learning-track-bar > span {
+  background: oklch(0.72 0.008 250);
+}
+.dark .learning-group-dot,
+.dark .learning-group-dot--0,
+.dark .learning-group-dot--1,
+.dark .learning-group-dot--2,
+.dark .learning-group-dot--3,
+.dark .learning-group-dot--4 {
+  background: oklch(0.68 0.008 250);
+  box-shadow: 0 0 0 4px oklch(1 0 0 / 0.045);
+}
+.dark .learning-task-row {
+  border-color: oklch(1 0 0 / 0.075);
+  background: oklch(1 0 0 / 0.018);
+}
+.dark .learning-task-row:hover {
+  border-color: oklch(1 0 0 / 0.14);
+  background: oklch(1 0 0 / 0.045);
+}
+.dark .learning-task-row.is-complete {
+  background: oklch(1 0 0 / 0.035);
+}
+.dark .learning-task-row.is-complete .learning-task-check {
+  color: oklch(0.72 0.008 250);
+}
+.dark .learning-task-check:hover {
+  color: var(--foreground);
+  background: oklch(1 0 0 / 0.07);
+}
+.dark .learning-page .text-primary {
+  color: oklch(0.82 0.008 250);
+}
+.dark .learning-page .bg-primary\/10 {
+  background: oklch(1 0 0 / 0.065);
+}
+.dark .learning-page .border-primary\/20 {
+  border-color: oklch(1 0 0 / 0.11);
+}
