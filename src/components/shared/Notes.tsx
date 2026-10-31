@@ -216,9 +216,6 @@ export function NotesTracker() {
   // Core Application Workspace State
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)
   const [isEditing, setIsEditing] = useState(false)
-  const [workspaceMode, setWorkspaceMode] = useState<"edit" | "preview">(
-    "preview"
-  )
 
   // Mobile view state for switching between list and editor on small screens
   const [mobileView, setMobileView] = useState<"list" | "editor">("list")
@@ -253,32 +250,6 @@ export function NotesTracker() {
     checkExistingDraft()
   }, [user])
 
-  // Auto-Save Draft Logic
-  useEffect(() => {
-    if (workspaceMode === "edit" && (title.trim() || content.trim())) {
-      const timer = setTimeout(() => {
-        const draftData = {
-          title,
-          content,
-          tag: selectedTag,
-          folderId: selectedFolderId,
-          noteId: selectedNote?.id || null,
-          timestamp: new Date().toISOString(),
-        }
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData))
-        setDraftSavedAt(new Date())
-      }, 1500)
-      return () => clearTimeout(timer)
-    }
-  }, [
-    title,
-    content,
-    selectedTag,
-    selectedFolderId,
-    workspaceMode,
-    selectedNote,
-  ])
-
   const checkExistingDraft = () => {
     const savedDraft = localStorage.getItem(DRAFT_KEY)
     if (savedDraft) setHasAvailableDraft(true)
@@ -293,12 +264,29 @@ export function NotesTracker() {
       setSelectedTag(draft.tag)
       setSelectedFolderId(draft.folderId)
       setIsEditing(true)
-      setWorkspaceMode("edit")
       setSelectedNote(notes.find((n) => n.id === draft.noteId) || null)
       setHasAvailableDraft(false)
       setMobileView("editor")
     }
   }, [notes])
+
+  const saveDraft = () => {
+    if (!title.trim() && !content.trim()) return
+
+    const savedAt = new Date()
+    const draftData = {
+      title,
+      content,
+      tag: selectedTag,
+      folderId: selectedFolderId,
+      noteId: selectedNote?.id || null,
+      timestamp: savedAt.toISOString(),
+    }
+
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData))
+    setDraftSavedAt(savedAt)
+    setHasAvailableDraft(true)
+  }
 
   const clearDraft = () => {
     localStorage.removeItem(DRAFT_KEY)
@@ -382,7 +370,6 @@ export function NotesTracker() {
     setContent(note.content)
     setSelectedTag(note.tag ?? "General")
     setSelectedFolderId(note.folder_id || null)
-    setWorkspaceMode("preview")
     setMobileView("editor")
   }
 
@@ -812,7 +799,6 @@ export function NotesTracker() {
                             size="sm"
                             onClick={() => {
                               setIsEditing(true)
-                              setWorkspaceMode("edit")
                             }}
                             className="gap-1.5 text-xs font-semibold"
                           >
@@ -845,21 +831,35 @@ export function NotesTracker() {
                       )}
 
                       {isEditing && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={handleSaveNote}
-                          disabled={
-                            isSubmitting || (!title.trim() && !content.trim())
-                          }
-                          className="gap-1.5 font-semibold shadow-sm"
-                        >
-                          {isSubmitting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            "Done"
-                          )}
-                        </Button>
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={saveDraft}
+                            disabled={!title.trim() && !content.trim()}
+                            className="gap-1.5 text-xs font-semibold"
+                          >
+                            <SaveAll className="h-3.5 w-3.5" />
+                            Save as draft
+                          </Button>
+                          <Button
+                            type="submit"
+                            form="note-form"
+                            variant="default"
+                            size="sm"
+                            disabled={
+                              isSubmitting || (!title.trim() && !content.trim())
+                            }
+                            className="gap-1.5 font-semibold shadow-sm"
+                          >
+                            {isSubmitting ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Done"
+                            )}
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
