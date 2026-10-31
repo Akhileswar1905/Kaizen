@@ -151,7 +151,7 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
                 </div>
               </div>
 
-              <aside className="space-y-4">
+              <aside className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <div className="rounded-2xl border border-border/70 bg-card p-5">
                   <p className="text-xs font-bold tracking-wide text-muted-foreground">WEEKLY COMPLETION</p>
                   <div className="mt-4 flex items-end gap-2">
