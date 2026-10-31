@@ -518,15 +518,6 @@ export function NotesTracker() {
         {/* Header */}
         <header className="flex shrink-0 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onBack}
-              aria-label="Back to dashboard"
-              className="h-9 w-9 shrink-0 rounded-full hover:bg-accent hover:text-accent-foreground sm:h-10 sm:w-10"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
             <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
               <PenTool className="h-5 w-5" />
             </div>
