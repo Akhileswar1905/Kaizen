@@ -597,3 +597,41 @@ h1,h2,h3,h4,h5,h6 { font-weight:700; letter-spacing:-0.015em; }
   .planner-page { padding: 1rem 0.65rem 6.5rem; }
   .planner-surface { border-radius: 1.15rem !important; }
 }
+
+
+/* Light theme: align Task Planner with the Learning Space palette and surfaces. */
+.planner-page:not(.dark) {
+  background:
+    radial-gradient(ellipse at 8% 0%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 34rem),
+    radial-gradient(ellipse at 100% 70%, color-mix(in oklch, oklch(0.72 0.13 185) 9%, transparent), transparent 30rem),
+    var(--background);
+}
+.planner-page:not(.dark) .planner-welcome {
+  background: linear-gradient(118deg, color-mix(in oklch, var(--card) 96%, transparent), color-mix(in oklch, var(--primary) 7%, var(--card)));
+  box-shadow: 0 22px 60px -42px oklch(0.12 0.02 260 / 0.32);
+}
+.planner-page:not(.dark) .planner-stat {
+  border-color: color-mix(in oklch, var(--border) 78%, transparent);
+  background: color-mix(in oklch, var(--card) 88%, transparent);
+  box-shadow: 0 10px 28px -24px oklch(0.12 0.02 260 / 0.35);
+}
+.planner-page:not(.dark) .planner-surface {
+  border-color: color-mix(in oklch, var(--border) 80%, transparent) !important;
+  background: color-mix(in oklch, var(--card) 86%, transparent) !important;
+  box-shadow: 0 18px 48px -38px oklch(0.12 0.02 260 / 0.35) !important;
+}
+.planner-page:not(.dark) [class*="bg-primary text-primary-foreground"] {
+  background: color-mix(in oklch, var(--primary) 9%, var(--card));
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 24%, var(--border));
+}
+.planner-page:not(.dark) [class*="ring-primary"] {
+  --tw-ring-color: color-mix(in oklch, var(--primary) 42%, transparent);
+}
+.planner-page:not(.dark) [class*="border-primary"] {
+  border-color: color-mix(in oklch, var(--primary) 32%, var(--border));
+}
+.planner-page:not(.dark) [class*="text-primary"] { color: var(--primary); }
+.planner-page:not(.dark) [class*="bg-primary/"] {
+  background-color: color-mix(in oklch, var(--primary) 12%, transparent);
+}
