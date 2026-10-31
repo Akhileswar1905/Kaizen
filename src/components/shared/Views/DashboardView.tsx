@@ -98,6 +98,7 @@ export function DashboardView({
   const [systemDesignDone, setSystemDesignDone] = useState(0)
   const [financeEntries, setFinanceEntries] = useState<FinanceEntry[]>([])
   const [recentTransactions, setRecentTransactions] = useState<FinanceEntry[]>([])
+  const [recentDsaEvents, setRecentDsaEvents] = useState<{ problem_id: string; created_at: string }[]>([])
   const [financeLoading, setFinanceLoading] = useState(true)
 
   useEffect(() => {
@@ -105,6 +106,7 @@ export function DashboardView({
     if (!user?.id) {
       setFinanceEntries([])
       setRecentTransactions([])
+      setRecentDsaEvents([])
       setFinanceLoading(false)
       return
     }
@@ -112,15 +114,17 @@ export function DashboardView({
     const loadDashboardData = async () => {
       setFinanceLoading(true)
       const monthStart = format(startOfMonth(parseISO(todayKey)), "yyyy-MM-dd")
-      const [financeResult, recentResult, designResult] = await Promise.all([
+      const [financeResult, recentResult, designResult, dsaResult] = await Promise.all([
         supabase.from("expenses").select("id,title,amount,category,date,type,created_at").eq("user_id", user.id).gte("date", monthStart).lte("date", todayKey).order("date", { ascending: false }),
         supabase.from("expenses").select("id,title,amount,category,date,type,created_at").eq("user_id", user.id).order("date", { ascending: false }).order("created_at", { ascending: false }).limit(4),
         supabase.from("system_design_progress").select("module_number,topic_index").eq("user_id", user.id),
+        supabase.from("dsa_completions").select("problem_id,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
       ])
       if (!active) return
       if (!financeResult.error && financeResult.data) setFinanceEntries(financeResult.data as FinanceEntry[])
       if (!recentResult.error && recentResult.data) setRecentTransactions(recentResult.data as FinanceEntry[])
       if (!designResult.error && designResult.data) setSystemDesignDone(designResult.data.length)
+      if (!dsaResult.error && dsaResult.data) setRecentDsaEvents(dsaResult.data as { problem_id: string; created_at: string }[])
       setFinanceLoading(false)
     }
 
@@ -139,7 +143,7 @@ export function DashboardView({
   const greeting = today.getHours() < 12 ? "Good morning." : today.getHours() < 17 ? "Good afternoon." : "Good evening."
 
   const activities = useMemo(() => {
-    const rows: { id: string; title: string; detail: string; date: string; kind: "habit" | "task" | "finance"; amount?: number; type?: string }[] = []
+    const rows: { id: string; title: string; detail: string; date: string; kind: "habit" | "task" | "finance" | "dsa" }[] = []
     Object.entries(logs).forEach(([key, completed]) => {
       if (!completed) return
       const date = key.slice(-10)
@@ -157,6 +161,11 @@ export function DashboardView({
         if (date <= todayKey) rows.push({ id: "learning-" + item.id, title: "Completed " + item.title, detail: "Learning space · " + item.category, date, kind: "task" })
       }
     })
+    recentDsaEvents.forEach((event) => {
+      const problem = Object.values(dsaData).flat().find((item) => item.id === event.problem_id)
+      const date = event.created_at.slice(0, 10)
+      if (date <= todayKey) rows.push({ id: "dsa-" + event.problem_id, title: "Solved " + (problem?.title || "a DSA problem"), detail: "DSA practice", date, kind: "dsa" })
+    })
     recentTransactions.forEach((entry) => {
       rows.push({ id: "finance-" + entry.id, title: entry.title, detail: entry.type === "income" ? "Income recorded · " + entry.category : "Expense recorded · " + entry.category, date: entry.date, kind: "finance", amount: Number(entry.amount), type: entry.type })
     })
@@ -164,7 +173,7 @@ export function DashboardView({
       .filter((row) => row.date <= todayKey && row.date >= format(subDays(today, 30), "yyyy-MM-dd"))
       .sort((a, b) => b.date.localeCompare(a.date))
       .slice(0, 5)
-  }, [logs, activeHabits, todayKey, todos, recentTransactions, learningItems])
+  }, [logs, activeHabits, todayKey, todos, recentTransactions, learningItems, recentDsaEvents, dsaData])
 
   return (
     <main className="kaizen-dashboard min-h-screen w-full px-3 pb-28 pt-5 text-foreground antialiased sm:px-6 sm:pt-8 xl:px-10">
@@ -333,7 +342,7 @@ export function DashboardView({
           <SectionHeading eyebrow="YOUR RECENT MOMENTUM" title="Recent activities" action={<span className="text-xs text-muted-foreground">Last 30 days</span>} />
           <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5">
             {activities.length === 0 ? <div className="py-6 text-center"><Icons.Activity className="mx-auto h-6 w-6 text-muted-foreground" /><p className="mt-2 text-sm font-bold">Your activity will show up here</p><p className="mt-1 text-xs text-muted-foreground">Complete a habit, task or record a transaction to start your timeline.</p></div> : <div className="space-y-0">{activities.map((activity, index) => {
-              const ActivityIcon = activity.kind === "habit" ? Icons.CheckCircle2 : activity.kind === "task" ? Icons.ListTodo : Icons.Wallet
+              const ActivityIcon = activity.kind === "habit" ? Icons.CheckCircle2 : activity.kind === "dsa" ? Icons.Code2 : activity.kind === "task" ? Icons.ListTodo : Icons.Wallet
               return <div key={activity.id} className={"flex items-center gap-3 py-3 " + (index ? "border-t border-border/50" : "")}>{index === 0 || activities[index - 1].date !== activity.date ? <span className="w-20 shrink-0 text-[10px] font-bold text-muted-foreground">{activity.date === todayKey ? "Today" : activity.date === format(subDays(today, 1), "yyyy-MM-dd") ? "Yesterday" : format(parseISO(activity.date), "MMM d")}</span> : <span className="w-20 shrink-0" />}<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground"><ActivityIcon className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{activity.title}</p><p className="text-xs text-muted-foreground">{activity.detail}</p></div></div>
             })}</div>}
           </div>
