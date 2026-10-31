@@ -1,5 +1,4 @@
 import { Wallet, BookOpen } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ExpenseTracker } from "../Finance/ExpenseTracker"
 import { VarsityTracker } from "../Finance/FinanceCourse"
