@@ -689,6 +689,7 @@ export default function KaizenTracker() {
         onOpenPlanner={() => setActiveView("planner")}
         onOpenTimeAudit={() => setActiveView("time-audit")}
         onOpenLearningChecklist={() => setActiveView("learning-checklist")}
+        activeView={activeView}
       />
     </div>
   )
