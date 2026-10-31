@@ -65,9 +65,6 @@ interface FolderRow {
   name: string
 }
 
-interface NotesTrackerProps {
-  onBack: () => void
-}
 
 // Each tag gets a stable colour derived from its name, so "Study" is always
 // the same hue wherever it appears.
@@ -205,7 +202,7 @@ function NameForm({ kind, existing, onSubmit, onClose }: NameFormProps) {
   )
 }
 
-export function NotesTracker({ onBack }: NotesTrackerProps) {
+export function NotesTracker() {
   const { user } = useAuth()
   const { triggerGamificationEvent, subtractGamificationPoints } =
     useGamification()
@@ -517,7 +514,7 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
 
   return (
     <div className="flex min-h-dvh justify-center bg-background/50 px-3 py-3 font-sans text-foreground antialiased sm:px-6 sm:py-5 md:px-10 md:py-7">
-      <div className="flex w-full max-w-6xl animate-in flex-col gap-4 duration-500 fade-in slide-in-from-bottom-4 sm:gap-5">
+      <div className="flex w-full max-w-[1440px] animate-in flex-col gap-4 duration-500 fade-in slide-in-from-bottom-4 sm:gap-5">
         {/* Header */}
         <header className="flex shrink-0 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
