@@ -151,6 +151,11 @@ export default function KaizenTracker() {
       return <div className="kaizen-page kaizen-page--learning"><LearningChecklistView /></div>
     }
 
+    const activeHabits = habits.filter((habit) => !habit.is_archived)
+    const todayKey = format(new Date(), "yyyy-MM-dd")
+    const completedToday = activeHabits.filter((habit) => logs[`${habit.id}-${todayKey}`]).length
+    const todayProgress = activeHabits.length ? Math.round((completedToday / activeHabits.length) * 100) : 0
+
     return (
       <main className="kaizen-dashboard min-h-screen w-full px-3 pb-28 pt-5 text-foreground antialiased sm:px-6 sm:pt-8 xl:px-10">
         <div className="mx-auto w-full max-w-[1440px] space-y-8">
