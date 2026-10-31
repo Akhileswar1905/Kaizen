@@ -720,3 +720,13 @@ h1,h2,h3,h4,h5,h6 { font-weight:700; letter-spacing:-0.015em; }
   background: oklch(1 0 0 / .13);
   box-shadow: inset 0 0 0 1px oklch(1 0 0 / .13), 0 3px 12px oklch(0 0 0 / .24);
 }
+
+
+/* Wider, less constrained workspaces across the app. */
+.kaizen-window { max-width: 1440px !important; }
+.kaizen-page > * { width: min(100%, 1440px); }
+.planner-shell { max-width: 1440px !important; }
+.dsa-workspace { max-width: 1440px !important; }
+@media (min-width: 1280px) {
+  .kaizen-page { padding-left: clamp(1.5rem, 3vw, 3.5rem); padding-right: clamp(1.5rem, 3vw, 3.5rem); }
+}
