@@ -164,7 +164,7 @@ export function DashboardView({
       if (date <= todayKey) rows.push({ id: "dsa-" + event.problem_id, title: "Solved " + (problem?.title || "a DSA problem"), detail: "DSA practice", date, kind: "dsa" })
     })
     recentTransactions.forEach((entry) => {
-      rows.push({ id: "finance-" + entry.id, title: entry.title, detail: entry.type === "income" ? "Income recorded · " + entry.category : "Expense recorded · " + entry.category, date: entry.date, kind: "finance", amount: Number(entry.amount), type: entry.type })
+      rows.push({ id: "finance-" + entry.id, title: entry.title, detail: entry.type === "income" ? "Income recorded · " + entry.category : "Expense recorded · " + entry.category, date: entry.date, kind: "finance" })
     })
     return rows
       .filter((row) => row.date <= todayKey && row.date >= format(subDays(today, 30), "yyyy-MM-dd"))
