@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   BicepsFlexed,
@@ -8,7 +7,6 @@ import {
   GraduationCap,
   Grid2x2,
   ListChecks,
-  MenuIcon,
   StickyNote,
   Wallet,
 } from "lucide-react"
@@ -39,8 +37,6 @@ export function FloatingMenu({
   onOpenTimeAudit,
   onOpenLearningChecklist,
 }: FloatingMenuProps) {
-  const [isOpen, setIsOpen] = useState(false)
-
   const items = [
     { label: "DSA", icon: GraduationCap, action: onOpenDSA },
     { label: "Finance", icon: Wallet, action: onOpenFinance },
@@ -72,27 +68,7 @@ export function FloatingMenu({
             <item.icon className="h-5 w-5 sm:h-[1.35rem] sm:w-[1.35rem]" />
           </Button>
         ))}
-        <div className="mx-0.5 h-7 w-px self-center bg-border/80" />
-        <Button
-          variant="ghost"
-          size="icon"
-          title="More"
-          aria-label="More"
-          aria-expanded={isOpen}
-          onClick={() => setIsOpen((open) => !open)}
-          className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary sm:h-12 sm:w-12"
-        >
-          <MenuIcon className="h-5 w-5" />
-        </Button>
-      </div>
-      {isOpen && (
-        <div className="kaizen-dock pointer-events-auto absolute right-4 bottom-16 flex items-center gap-2 rounded-xl p-2 sm:right-[calc(50%-14rem)] sm:bottom-20">
-          <span className="px-2 text-xs font-semibold text-muted-foreground">Kaizen apps</span>
-          <Button variant="ghost" size="sm" onClick={() => { onOpenDSA(); setIsOpen(false) }}>DSA</Button>
-          <Button variant="ghost" size="sm" onClick={() => { onOpenFinance(); setIsOpen(false) }}>Finance</Button>
-          <Button variant="ghost" size="sm" onClick={() => { onOpenNotes?.(); setIsOpen(false) }}>Notes</Button>
-        </div>
-      )}
+
     </div>
   )
 }
