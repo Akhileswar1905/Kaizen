@@ -103,10 +103,6 @@ export function Auth() {
   return (
     <div className="kaizen-desktop flex min-h-screen items-center justify-center p-4">
       <Card className="kaizen-auth-window w-full max-w-100 overflow-hidden border-border/50 shadow-2xl">
-        <div className="kaizen-titlebar mx-5 mt-3 mb-0">
-          <div className="kaizen-traffic-lights" aria-hidden="true"><span /><span /><span /></div>
-          <span className="ml-2">Kaizen</span>
-        </div>
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">
             Welcome to Kaizen
