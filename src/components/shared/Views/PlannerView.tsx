@@ -47,11 +47,7 @@ import { cn } from "@/lib/utils"
 import { useTodos } from "@/hooks/useTodos"
 import { TimeBlockWeek } from "@/components/shared/Planner/TimeBlockWeek"
 
-interface PlannerViewProps {
-  onBack: () => void
-}
-
-export function PlannerView({ onBack }: PlannerViewProps) {
+export function PlannerView() {
   const [viewMode, setViewMode] = useState<"daily" | "calendar" | "blocks">(
     "daily"
   )
@@ -193,14 +189,6 @@ export function PlannerView({ onBack }: PlannerViewProps) {
         {/* Header Section */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onBack}
-              className="h-10 w-10 shrink-0 rounded-full bg-card/60 hover:bg-muted"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">PERSONAL WORKSPACE</p>
               <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
