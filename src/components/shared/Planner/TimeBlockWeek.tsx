@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { useTodos } from "@/hooks/useTodos"
 import {
   BLOCK_COLORS,
   fromMinutes,
@@ -127,7 +128,8 @@ interface DragState {
   current: number
 }
 
-export function TimeBlockWeek({ onBlockCreated }: { onBlockCreated?: (title: string, date: string) => Promise<boolean> }) {
+export function TimeBlockWeek() {
+  const { addTodo } = useTodos()
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), WEEK_OPTIONS)
   )
@@ -223,10 +225,10 @@ export function TimeBlockWeek({ onBlockCreated }: { onBlockCreated?: (title: str
     setSaving(false)
     if (ok) {
       setDraft(null)
-      if (isNewBlock && onBlockCreated) {
-        const taskCreated = await onBlockCreated(title, draft.date)
-        if (!taskCreated) {
-          setLinkError("Time block saved, but its task could not be added. Check the task planner error and try again.")
+      if (isNewBlock) {
+        const task = await addTodo(title, "", draft.date)
+        if (!task) {
+          setLinkError("Time block saved, but its task could not be added. Check your task list connection and try again.")
         } else {
           setLinkError(null)
         }
