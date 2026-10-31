@@ -276,3 +276,48 @@
   border: 3px solid transparent;
   background-clip: content-box;
 }
+
+/* =========================================================
+   DASHBOARD: macOS "floating window" treatment
+   Scoped to the dashboard only — the rest of the app keeps
+   the system font and its plain background.
+   ========================================================= */
+
+/* Comic Neue, used only inside .kaizen-window. */
+.font-comic-neue {
+  font-family: "Comic Neue", "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
+}
+
+/* A soft macOS-desktop-style wallpaper behind the window. */
+.kaizen-desktop-bg {
+  background:
+    radial-gradient(circle at 15% -10%, oklch(0.75 0.09 255 / 0.3), transparent 55%),
+    radial-gradient(circle at 88% 0%, oklch(0.78 0.1 330 / 0.22), transparent 50%),
+    radial-gradient(circle at 50% 110%, oklch(0.8 0.08 180 / 0.16), transparent 55%),
+    var(--background);
+}
+.dark .kaizen-desktop-bg {
+  background:
+    radial-gradient(circle at 15% -10%, oklch(0.4 0.09 255 / 0.35), transparent 55%),
+    radial-gradient(circle at 88% 0%, oklch(0.4 0.1 330 / 0.25), transparent 50%),
+    radial-gradient(circle at 50% 110%, oklch(0.4 0.08 180 / 0.18), transparent 55%),
+    var(--background);
+}
+
+/* The window itself: a soft top highlight, like glass catching light. */
+.kaizen-window {
+  position: relative;
+  box-shadow:
+    0 50px 100px -40px rgba(0, 0, 0, 0.5),
+    0 1px 0 0 oklch(1 0 0 / 0.5) inset;
+}
+.dark .kaizen-window {
+  box-shadow:
+    0 50px 100px -40px rgba(0, 0, 0, 0.7),
+    0 1px 0 0 oklch(1 0 0 / 0.08) inset;
+}
+
+/* Title bar: deliberately has no traffic-light controls. */
+.kaizen-titlebar {
+  -webkit-app-region: drag;
+}

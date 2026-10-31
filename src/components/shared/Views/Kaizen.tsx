@@ -164,8 +164,21 @@ export default function KaizenTracker() {
     }
 
     return (
-      <div className="flex min-h-screen justify-center bg-background/50 px-3 py-6 font-sans text-foreground antialiased sm:px-6 sm:py-10 md:px-12 md:py-14">
-        <div className="w-full max-w-4xl space-y-8 sm:space-y-10">
+      <div className="kaizen-desktop-bg flex min-h-screen justify-center px-3 py-6 text-foreground antialiased sm:px-6 sm:py-10 md:px-12 md:py-14">
+        <div className="w-full max-w-4xl">
+          {/* macOS-style floating window. No traffic-light controls by design. */}
+          <div className="font-comic-neue kaizen-window overflow-hidden rounded-[20px] border border-black/10 bg-card/70 backdrop-blur-2xl dark:border-white/10">
+            <div className="kaizen-titlebar flex h-11 items-center justify-center border-b border-border/40 bg-white/45 backdrop-blur-xl dark:bg-white/[0.04]">
+              <span className="flex items-center gap-2 text-[11px] font-bold tracking-wide text-foreground/70">
+                <img
+                  src="/light_icon.png"
+                  alt=""
+                  className="h-4 w-4 rounded-[4px] object-contain"
+                />
+                Kaizen
+              </span>
+            </div>
+            <div className="space-y-8 p-4 sm:space-y-10 sm:p-6 md:p-10">
           {/* Header Section */}
           <header className="flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
             {/* Left Column: Branding */}
@@ -539,6 +552,8 @@ export default function KaizenTracker() {
             </div>
             <div className="rounded-2xl border border-border/50 bg-card/40 p-4 shadow-sm backdrop-blur-sm">
               <Heatmap logs={logs} />
+            </div>
+          </div>
             </div>
           </div>
         </div>
