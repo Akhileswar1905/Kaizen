@@ -167,4 +167,5 @@ export function Auth() {
         <p className="mt-5 text-center text-xs font-medium text-muted-foreground">Small steps. Consistent progress.</p>
       </div>
     </main>
+  )
 }
