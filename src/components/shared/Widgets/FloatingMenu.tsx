@@ -14,6 +14,15 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+// Menu items whose code and routes stay in place but shouldn't be reachable
+// from the floating menu right now. Remove an id here to bring it back.
+const HIDDEN_MENU_ITEMS = [
+  "journal",
+  "system-design",
+  "workout-tracker",
+  "time-audit",
+] as const
+
 interface FloatingMenuProps {
   onOpenDSA: () => void
   onOpenJournal: () => void
@@ -84,22 +93,24 @@ export function FloatingMenu({
         </div>
 
         {/* Option 2: Journal */}
-        <div className="group flex items-center gap-3">
-          <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-            Journal
-          </span>
-          <Button
-            variant="secondary"
-            size="icon"
-            className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              onOpenJournal()
-              setIsOpen(false)
-            }}
-          >
-            <BookOpen className="h-5 w-5" />
-          </Button>
-        </div>
+        {!HIDDEN_MENU_ITEMS.includes("journal") && (
+          <div className="group flex items-center gap-3">
+            <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
+              Journal
+            </span>
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
+              onClick={() => {
+                onOpenJournal()
+                setIsOpen(false)
+              }}
+            >
+              <BookOpen className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
 
         {/* Option 3: Finance */}
         <div className="group flex items-center gap-3">
@@ -120,22 +131,24 @@ export function FloatingMenu({
         </div>
 
         {/* Option 4: System Design */}
-        <div className="group flex items-center gap-3">
-          <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-            System Design
-          </span>
-          <Button
-            variant="secondary"
-            size="icon"
-            className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              onOpenSystemDesign()
-              setIsOpen(false)
-            }}
-          >
-            <Book className="h-5 w-5" />
-          </Button>
-        </div>
+        {!HIDDEN_MENU_ITEMS.includes("system-design") && (
+          <div className="group flex items-center gap-3">
+            <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
+              System Design
+            </span>
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
+              onClick={() => {
+                onOpenSystemDesign()
+                setIsOpen(false)
+              }}
+            >
+              <Book className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
 
         {/* Option 5: Notes */}
         <div className="group flex items-center gap-3">
@@ -156,22 +169,24 @@ export function FloatingMenu({
         </div>
 
         {/* Option 6: Workout Tracker */}
-        <div className="group flex items-center gap-3">
-          <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-            Workout Tracker
-          </span>
-          <Button
-            variant="secondary"
-            size="icon"
-            className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              onOpenWorkoutTracker?.()
-              setIsOpen(false)
-            }}
-          >
-            <BicepsFlexed className="h-5 w-5" />
-          </Button>
-        </div>
+        {!HIDDEN_MENU_ITEMS.includes("workout-tracker") && (
+          <div className="group flex items-center gap-3">
+            <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
+              Workout Tracker
+            </span>
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
+              onClick={() => {
+                onOpenWorkoutTracker?.()
+                setIsOpen(false)
+              }}
+            >
+              <BicepsFlexed className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
 
         {/* Option 7: Planner */}
         <div className="group flex items-center gap-3">
@@ -210,22 +225,24 @@ export function FloatingMenu({
         </div>
 
         {/* Option 8: Time Audit */}
-        <div className="group flex items-center gap-3">
-          <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
-            Time Audit
-          </span>
-          <Button
-            variant="secondary"
-            size="icon"
-            className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
-            onClick={() => {
-              onOpenTimeAudit?.()
-              setIsOpen(false)
-            }}
-          >
-            <Grid2x2 className="h-5 w-5" />
-          </Button>
-        </div>
+        {!HIDDEN_MENU_ITEMS.includes("time-audit") && (
+          <div className="group flex items-center gap-3">
+            <span className="rounded-lg border bg-popover px-2.5 py-1 text-xs font-semibold text-popover-foreground shadow-sm transition-opacity group-hover:opacity-100 md:opacity-0">
+              Time Audit
+            </span>
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-12 w-12 rounded-full border bg-card shadow-md hover:bg-accent hover:text-accent-foreground"
+              onClick={() => {
+                onOpenTimeAudit?.()
+                setIsOpen(false)
+              }}
+            >
+              <Grid2x2 className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Main Trigger FAB */}
