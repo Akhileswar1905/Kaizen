@@ -28,6 +28,7 @@ export default function KaizenTracker() {
   const [isStatusOpen, setIsStatusOpen] = useState(false)
   const [isStreaksModalOpen, setIsStreaksModalOpen] = useState(false)
   const [isMultiplayerOpen, setIsMultiplayerOpen] = useState(false)
+  const [financeInitialTab, setFinanceInitialTab] = useState<"income" | "expenses" | "courses">("expenses")
 
   const {
     habits,
@@ -133,7 +134,7 @@ export default function KaizenTracker() {
       return <div className="kaizen-page kaizen-page--journal"><JournalView onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "finance") {
-      return <div className="kaizen-page kaizen-page--finance"><FinanceView /></div>
+      return <div className="kaizen-page kaizen-page--finance"><FinanceView initialTab={financeInitialTab} /></div>
     }
     if (activeView === "system-design") {
       return <div className="kaizen-page kaizen-page--system-design"><SystemDesignHub onBack={() => setActiveView("dashboard")} /></div>
@@ -164,6 +165,7 @@ export default function KaizenTracker() {
         dsaCompleted={dsaCompleted}
         setActiveView={setActiveView}
         onOpenStatus={() => setIsStatusOpen(true)}
+        onOpenFinanceTab={(tab) => { setFinanceInitialTab(tab); setActiveView("finance") }}
       />
     )
   }
