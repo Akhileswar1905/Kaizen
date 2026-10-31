@@ -4,7 +4,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import {
-  ArrowLeft,
   ExternalLink,
   Code2,
   Loader2,
@@ -19,7 +18,7 @@ import {
 } from "lucide-react"
 import { useTracker } from "@/hooks/useTracker"
 
-export function DsaSheet({ onBack }: { onBack: () => void }) {
+export function DsaSheet() {
   // Assumes useTracker now provides:
   // - dsaNotes: Record<string, string> (e.g., { "problem-123": "Used two pointers..." })
   // - saveDsaNote: (problemId: string, note: string) => Promise<void>
@@ -77,14 +76,6 @@ export function DsaSheet({ onBack }: { onBack: () => void }) {
       {/* Dynamic Header Workspace */}
       <div className="dsa-header flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onBack}
-            className="rounded-full bg-background/50 backdrop-blur-sm transition-transform hover:scale-105 active:scale-95"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">
               <Code2 className="h-7 w-7 text-primary" /> DSA Sheet
