@@ -21,6 +21,7 @@ import { WorkoutTracker } from "./WorkoutTracker"
 import { PlannerView } from "./PlannerView"
 import { TimeAuditView } from "./TimeAuditView"
 import { LearningChecklistView } from "./LearningChecklistView"
+import { HabitTrackerView } from "./HabitTrackerView"
 
 export default function KaizenTracker() {
   const [isStatusOpen, setIsStatusOpen] = useState(false)
