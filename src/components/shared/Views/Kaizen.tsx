@@ -130,13 +130,13 @@ export default function KaizenTracker() {
       return <div className="kaizen-page kaizen-page--journal"><JournalView onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "finance") {
-      return <div className="kaizen-page kaizen-page--finance"><FinanceView onBack={() => setActiveView("dashboard")} /></div>
+      return <div className="kaizen-page kaizen-page--finance"><FinanceView /></div>
     }
     if (activeView === "system-design") {
       return <div className="kaizen-page kaizen-page--system-design"><SystemDesignHub onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "notes") {
-      return <div className="kaizen-page kaizen-page--notes"><NotesTracker onBack={() => setActiveView("dashboard")} /></div>
+      return <div className="kaizen-page kaizen-page--notes"><NotesTracker /></div>
     }
     if (activeView === "workout-tracker") {
       return <div className="kaizen-page kaizen-page--workout"><WorkoutTracker onBack={() => setActiveView("dashboard")} /></div>
@@ -148,7 +148,7 @@ export default function KaizenTracker() {
       return <div className="kaizen-page kaizen-page--time-audit"><TimeAuditView onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "learning-checklist") {
-      return <div className="kaizen-page kaizen-page--learning"><LearningChecklistView onBack={() => setActiveView("dashboard")} /></div>
+      return <div className="kaizen-page kaizen-page--learning"><LearningChecklistView /></div>
     }
 
     return (
@@ -156,14 +156,22 @@ export default function KaizenTracker() {
         <div className="mx-auto w-full max-w-[1440px] space-y-8">
           <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
             <div className="flex items-center gap-3">
-              <img src="/light_icon.png" alt="" className="h-10 w-10 rounded-xl object-contain" />
-              <div><p className="text-xl font-extrabold tracking-tight">Kaizen</p><p className="text-[11px] font-bold tracking-[0.15em] text-muted-foreground">PERSONAL GROWTH WORKSPACE</p></div>
+              <img src="/light_icon.png" alt="Kaizen logo" className="h-12 w-12 shrink-0 rounded-2xl border border-border/70 bg-card p-1 object-contain shadow-sm" />
+              <div><p className="text-2xl font-extrabold tracking-tight">Kaizen</p><p className="text-[11px] font-bold tracking-[0.15em] text-muted-foreground">PERSONAL GROWTH WORKSPACE</p></div>
             </div>
             <div className="flex items-center gap-3">
               <div className="hidden text-right sm:block"><p className="text-sm font-bold">{format(new Date(), "EEEE, d MMMM")}</p><p className="text-xs text-muted-foreground">Make today count.</p></div>
               <Button variant="outline" size="icon" onClick={() => setIsStatusOpen(true)} className="h-10 w-10 rounded-xl" title="Your progress"><Icons.UserRound className="h-4 w-4" /></Button>
             </div>
           </header>
+
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="rounded-2xl border border-border/70 bg-card p-4"><p className="text-[11px] font-bold tracking-wide text-muted-foreground">ACTIVE HABITS</p><p className="mt-2 text-3xl font-extrabold tabular-nums">{activeHabits.length}</p><p className="mt-1 text-xs text-muted-foreground">Routines you're building</p></div>
+            <div className="rounded-2xl border border-border/70 bg-card p-4"><p className="text-[11px] font-bold tracking-wide text-muted-foreground">TODAY'S PROGRESS</p><p className="mt-2 text-3xl font-extrabold tabular-nums">{completedToday}<span className="text-base font-bold text-muted-foreground"> / {activeHabits.length}</span></p><p className="mt-1 text-xs text-muted-foreground">{todayProgress}% of habits checked in</p></div>
+            <div className="rounded-2xl border border-border/70 bg-card p-4"><p className="text-[11px] font-bold tracking-wide text-muted-foreground">WEEKLY CHECK-INS</p><p className="mt-2 text-3xl font-extrabold tabular-nums">{checksThisWeek}</p><p className="mt-1 text-xs text-muted-foreground">Completed this week</p></div>
+            <button onClick={() => setIsStreaksModalOpen(true)} className="rounded-2xl border border-border/70 bg-card p-4 text-left transition-colors hover:bg-muted/40"><p className="text-[11px] font-bold tracking-wide text-muted-foreground">BEST ACTIVE STREAK</p><p className="mt-2 text-3xl font-extrabold tabular-nums">{highestActiveStreak}<span className="ml-1 text-base font-bold text-muted-foreground">days</span></p><p className="mt-1 text-xs text-muted-foreground">View all habit streaks</p></button>
+            <button onClick={() => setIsStatusOpen(true)} className="rounded-2xl border border-border/70 bg-card p-4 text-left transition-colors hover:bg-muted/40"><p className="text-[11px] font-bold tracking-wide text-muted-foreground">KAIZEN LEVEL</p><p className="mt-2 text-3xl font-extrabold tabular-nums">{playerStats?.level ?? 1}</p><p className="mt-1 text-xs text-muted-foreground">Your overall progress</p></button>
+          </section>
 
           <section className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.75fr)]">
             <div className="relative overflow-hidden rounded-[1.75rem] border border-border/70 bg-card p-6 sm:p-9">
