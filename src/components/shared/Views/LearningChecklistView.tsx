@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { ArrowLeft, BookOpen, CheckCircle2, Circle, GraduationCap, Layers3, Loader2, Pencil, Plus, Search, Sparkles, Target, Trash2 } from "lucide-react"
+import { BookOpen, CheckCircle2, Circle, GraduationCap, Layers3, Loader2, Pencil, Plus, Search, Sparkles, Target, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,7 +10,7 @@ import { useLearningChecklist, type LearningChecklistItem } from "@/hooks/useLea
 
 type Props = { onBack: () => void }
 type Filter = "all" | "pending" | "completed"
-export function LearningChecklistView({ onBack }: Props) {
+export function LearningChecklistView() {
   const { items, categories, isLoading, errorMessage, createItem, updateItem, deleteItem, addCategory } = useLearningChecklist()
   const [selected, setSelected] = useState("All")
   const [filter, setFilter] = useState<Filter>("all")
@@ -70,12 +70,9 @@ export function LearningChecklistView({ onBack }: Props) {
     return { name, total: rows.length, done, progress: rows.length ? Math.round(done / rows.length * 100) : 0 }
   })
   return <main className="learning-page min-h-screen px-3 py-5 text-foreground sm:px-6 sm:py-8">
-    <div className="learning-shell mx-auto max-w-6xl space-y-6">
-      <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onBack} aria-label="Back to dashboard" className="rounded-xl"><ArrowLeft className="h-4 w-4" /></Button>
-          <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground"><GraduationCap className="h-4 w-4 text-primary" /> Learning space</div>
-        </div>
+    <div className="learning-shell mx-auto max-w-[1440px] space-y-6">
+      <header className="flex items-center justify-between gap-3 border-b border-border/60 pb-5">
+        <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground"><GraduationCap className="h-5 w-5 text-primary" /> Learning space</div>
         <Button variant="outline" className="rounded-xl border-border/70 bg-card/70 gap-2" onClick={() => { setActionError(null); setCategoryDialog(true) }}><Plus className="h-4 w-4" /> <span className="hidden sm:inline">New category</span><span className="sm:hidden">Category</span></Button>
       </header>
 
