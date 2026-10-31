@@ -67,9 +67,9 @@ export function DsaSheet({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl animate-in space-y-8 p-4 duration-500 fade-in slide-in-from-bottom-4 md:p-6">
+    <div className="dsa-workspace mx-auto max-w-5xl animate-in space-y-7 p-4 duration-500 fade-in slide-in-from-bottom-4 md:p-7">
       {/* Dynamic Header Workspace */}
-      <div className="flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="dsa-header flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Button
             variant="outline"
@@ -90,7 +90,7 @@ export function DsaSheet({ onBack }: { onBack: () => void }) {
         </div>
 
         {/* Gamified Analytics Card */}
-        <div className="flex items-center gap-4 rounded-2xl border bg-card/40 p-3 px-4 shadow-sm backdrop-blur-md sm:w-auto">
+        <div className="dsa-progress flex items-center gap-4 rounded-2xl border bg-card/40 p-3 px-4 shadow-sm backdrop-blur-md sm:w-auto">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Trophy className="h-5 w-5" />
           </div>
@@ -114,7 +114,7 @@ export function DsaSheet({ onBack }: { onBack: () => void }) {
       {/* Main Categories Navigation Engine */}
       <Tabs defaultValue={firstCategory} className="w-full space-y-6">
         <div className="w-full scrollbar-none overflow-x-auto pb-2 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <TabsList className="inline-flex w-max justify-start rounded-xl bg-muted/50 p-1 backdrop-blur-sm">
+          <TabsList className="dsa-tabs inline-flex w-max justify-start rounded-xl bg-muted/50 p-1 backdrop-blur-sm">
             {Object.keys(dsaData).map((category) => {
               const categoryProblems = dsaData[category] || []
               const categoryCompleted = categoryProblems.filter((p) =>
@@ -125,7 +125,7 @@ export function DsaSheet({ onBack }: { onBack: () => void }) {
                 <TabsTrigger
                   key={category}
                   value={category}
-                  className="relative rounded-lg px-4 py-2 text-xs font-bold whitespace-nowrap text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                  className="dsa-tab relative rounded-lg px-4 py-2 text-xs font-bold whitespace-nowrap text-muted-foreground transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                 >
                   {category}
                   {categoryCompleted > 0 && (
@@ -172,7 +172,7 @@ export function DsaSheet({ onBack }: { onBack: () => void }) {
               return (
                 <div
                   key={problem.id}
-                  className={`group flex flex-col rounded-xl border border-l-4 bg-card/40 shadow-sm transition-all duration-200 ${difficultyStyles.border} ${isDone ? "opacity-85" : ""} ${isExpanded ? "border-b-primary/20 bg-card shadow-md" : "hover:-translate-y-0.5 hover:bg-card hover:shadow-md"}`}
+                  className={`dsa-problem group flex flex-col rounded-xl border border-l-4 bg-card/40 shadow-sm transition-all duration-200 ${difficultyStyles.border} ${isDone ? "opacity-85" : ""} ${isExpanded ? "border-b-primary/20 bg-card shadow-md" : "hover:-translate-y-0.5 hover:bg-card hover:shadow-md"}`}
                 >
                   {/* Main Problem Header Interaction Row */}
                   <div className="flex items-center justify-between p-4">
