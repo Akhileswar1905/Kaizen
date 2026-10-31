@@ -46,10 +46,8 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
   } = props
 
   return (
-      <div className="kaizen-desktop flex min-h-screen justify-center px-2 py-3 font-sans text-foreground antialiased sm:px-5 sm:py-6 xl:px-8">
-        <div className="kaizen-window w-full max-w-[1440px] space-y-7 sm:space-y-9">
-          {/* Dedicated habit tracking workspace */}
-          <div className="space-y-7">
+      <main className="habit-tracker-page w-full space-y-6 text-foreground antialiased">
+        <div className="habit-tracker-content mx-auto w-full max-w-[1440px] space-y-7">
             <header className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-bold tracking-[0.16em] text-muted-foreground">HABIT TRACKER</p>
@@ -64,13 +62,12 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
               </div>
             </header>
 
-            <section className="grid grid-cols-1 gap-6">
+            <section className="space-y-6">
               <div className="min-w-0 space-y-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-semibold text-muted-foreground">YOUR WEEK AT A GLANCE</p>
-                    <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Build your rhythm.</h1>
-                    <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">Small actions, repeated with intention. Pick up where you left off and make today count.</p>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Track the small actions that build your routine.</p>
                   </div>
                   <div className="flex items-center gap-1 self-start rounded-xl border border-border/70 bg-card p-1 sm:self-auto">
                     <Button variant="ghost" size="icon" onClick={prevWeek} className="h-8 w-8 rounded-lg"><ChevronLeft className="h-4 w-4" /></Button>
@@ -151,7 +148,7 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
                 </div>
               </div>
 
-              <aside className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <aside className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="rounded-2xl border border-border/70 bg-card p-5">
                   <p className="text-xs font-bold tracking-wide text-muted-foreground">WEEKLY COMPLETION</p>
                   <div className="mt-4 flex items-end gap-2">
@@ -176,9 +173,7 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
                 </div>
               </aside>
             </section>
-          </div>
-
         </div>
-      </div>
+      </main>
   )
 }
