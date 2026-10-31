@@ -68,7 +68,7 @@ export function FloatingMenu({
             <item.icon className="h-5 w-5 sm:h-[1.35rem] sm:w-[1.35rem]" />
           </Button>
         ))}
-
+      </div>
     </div>
   )
 }
