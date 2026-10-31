@@ -111,7 +111,7 @@ export function DashboardView({
 
     const loadDashboardData = async () => {
       setFinanceLoading(true)
-      const monthStart = format(startOfMonth(today), "yyyy-MM-dd")
+      const monthStart = format(startOfMonth(parseISO(todayKey)), "yyyy-MM-dd")
       const [financeResult, recentResult, designResult] = await Promise.all([
         supabase.from("expenses").select("id,title,amount,category,date,type,created_at").eq("user_id", user.id).gte("date", monthStart).lte("date", todayKey).order("date", { ascending: false }),
         supabase.from("expenses").select("id,title,amount,category,date,type,created_at").eq("user_id", user.id).order("date", { ascending: false }).order("created_at", { ascending: false }).limit(4),
@@ -334,7 +334,7 @@ export function DashboardView({
           <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5">
             {activities.length === 0 ? <div className="py-6 text-center"><Icons.Activity className="mx-auto h-6 w-6 text-muted-foreground" /><p className="mt-2 text-sm font-bold">Your activity will show up here</p><p className="mt-1 text-xs text-muted-foreground">Complete a habit, task or record a transaction to start your timeline.</p></div> : <div className="space-y-0">{activities.map((activity, index) => {
               const ActivityIcon = activity.kind === "habit" ? Icons.CheckCircle2 : activity.kind === "task" ? Icons.ListTodo : Icons.Wallet
-              return <div key={activity.id} className={"flex items-center gap-3 py-3 " + (index ? "border-t border-border/50" : "")}><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground"><ActivityIcon className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{activity.title}</p><p className="text-xs text-muted-foreground">{activity.detail}</p></div><span className="shrink-0 text-xs text-muted-foreground">{format(parseISO(activity.date), "MMM d")}</span></div>
+              return <div key={activity.id} className={"flex items-center gap-3 py-3 " + (index ? "border-t border-border/50" : "")}>{(index === 0 || activities[index - 1].date !== activity.date) && <span className="w-20 shrink-0 text-[10px] font-bold text-muted-foreground">{activity.date === todayKey ? "Today" : activity.date === format(subDays(today, 1), "yyyy-MM-dd") ? "Yesterday" : format(parseISO(activity.date), "MMM d")}</span>}<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground"><ActivityIcon className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{activity.title}</p><p className="text-xs text-muted-foreground">{activity.detail}</p></div></div>
             })}</div>}
           </div>
         </section>
