@@ -635,3 +635,88 @@ h1,h2,h3,h4,h5,h6 { font-weight:700; letter-spacing:-0.015em; }
 .planner-page:not(.dark) [class*="bg-primary/"] {
   background-color: color-mix(in oklch, var(--primary) 12%, transparent);
 }
+
+
+/* DSA problem-solving workspace */
+.dsa-workspace { max-width: 1120px !important; }
+.dsa-workspace .dsa-header { border-color: color-mix(in oklch,var(--border) 80%,transparent); }
+.dsa-workspace .dsa-progress {
+  min-width: 220px;
+  border-color: color-mix(in oklch,var(--border) 78%,transparent);
+  background: color-mix(in oklch,var(--card) 88%,transparent);
+  box-shadow: 0 12px 32px -26px oklch(0.12 0.02 260 / .3);
+}
+.dsa-workspace .dsa-tabs {
+  border: 1px solid color-mix(in oklch,var(--border) 76%,transparent);
+  background: color-mix(in oklch,var(--muted) 58%,transparent);
+  gap: .2rem;
+}
+.dsa-workspace .dsa-tab { min-height: 2.5rem; border: 1px solid transparent; }
+.dsa-workspace .dsa-tab[data-state="active"] {
+  border-color: color-mix(in oklch,var(--border) 85%,transparent);
+  background: color-mix(in oklch,var(--card) 96%,transparent);
+  box-shadow: 0 2px 8px oklch(0.12 0.02 260 / .08);
+}
+.dsa-workspace .dsa-problem {
+  border: 1px solid color-mix(in oklch,var(--border) 78%,transparent);
+  border-left-width: 3px;
+  border-radius: 1rem;
+  background: color-mix(in oklch,var(--card) 90%,transparent);
+  box-shadow: 0 8px 24px -22px oklch(0.12 0.02 260 / .3);
+}
+.dsa-workspace .dsa-problem:hover {
+  border-color: color-mix(in oklch,var(--primary) 24%,var(--border));
+  background: color-mix(in oklch,var(--card) 98%,transparent);
+  transform: translateY(-1px);
+}
+.dsa-workspace .dsa-problem label { font-size: .925rem; font-weight: 700; line-height: 1.4; }
+.dsa-workspace .dsa-problem [data-state="checked"] { background: var(--foreground); border-color: var(--foreground); }
+.dsa-workspace .dsa-problem .bg-emerald-500\/10,
+.dsa-workspace .dsa-problem .bg-amber-500\/10,
+.dsa-workspace .dsa-problem .bg-rose-500\/10 {
+  background: color-mix(in oklch,var(--muted) 70%,transparent);
+  border-color: color-mix(in oklch,var(--border) 85%,transparent);
+  color: var(--muted-foreground);
+}
+.dsa-workspace .dsa-problem .border-l-emerald-500,
+.dsa-workspace .dsa-problem .border-l-amber-500,
+.dsa-workspace .dsa-problem .border-l-rose-500 { border-left-color: color-mix(in oklch,var(--foreground) 22%,var(--border)); }
+.dark .dsa-workspace .dsa-progress,
+.dark .dsa-workspace .dsa-problem {
+  border-color: oklch(1 0 0 / .085);
+  background: color-mix(in oklch,var(--card) 96%,transparent);
+  box-shadow: 0 12px 32px -28px oklch(0 0 0 / .65);
+}
+.dark .dsa-workspace .dsa-problem .bg-emerald-500\/10,
+.dark .dsa-workspace .dsa-problem .bg-amber-500\/10,
+.dark .dsa-workspace .dsa-problem .bg-rose-500\/10 {
+  background: oklch(1 0 0 / .055);
+  color: var(--muted-foreground);
+}
+.dark .dsa-workspace .dsa-problem .border-l-emerald-500,
+.dark .dsa-workspace .dsa-problem .border-l-amber-500,
+.dark .dsa-workspace .dsa-problem .border-l-rose-500 { border-left-color: oklch(1 0 0 / .2); }
+
+/* Active dock destination: quiet macOS-style selected tile and indicator. */
+.kaizen-dock button.is-active {
+  position: relative;
+  color: var(--foreground);
+  background: color-mix(in oklch,var(--foreground) 10%,var(--card));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch,var(--foreground) 13%,transparent), 0 3px 10px oklch(0 0 0 / .07);
+}
+.kaizen-dock button.is-active::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .75;
+  transform: translateX(-50%);
+}
+.dark .kaizen-dock button.is-active {
+  background: oklch(1 0 0 / .13);
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / .13), 0 3px 12px oklch(0 0 0 / .24);
+}
