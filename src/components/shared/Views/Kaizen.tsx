@@ -164,8 +164,13 @@ export default function KaizenTracker() {
     }
 
     return (
-      <div className="flex min-h-screen justify-center bg-background/50 px-3 py-6 font-sans text-foreground antialiased sm:px-6 sm:py-10 md:px-12 md:py-14">
-        <div className="w-full max-w-4xl space-y-8 sm:space-y-10">
+      <div className="kaizen-desktop flex min-h-screen justify-center px-3 py-4 font-sans text-foreground antialiased sm:px-6 sm:py-8">
+        <div className="kaizen-window w-full max-w-5xl space-y-8 sm:space-y-10">
+          <div className="kaizen-titlebar">
+            <div className="kaizen-traffic-lights" aria-hidden="true"><span /><span /><span /></div>
+            <span className="ml-2">Kaizen</span>
+            <span className="ml-auto text-[11px] font-medium opacity-70">A little better, every day</span>
+          </div>
           {/* Header Section */}
           <header className="flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
             {/* Left Column: Branding */}
@@ -179,11 +184,11 @@ export default function KaizenTracker() {
                 />
               </div>
               <div>
-                <h1 className="bg-linear-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
+                <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                   Kaizen
                 </h1>
                 <p className="mt-0.5 text-sm font-medium text-muted-foreground/80">
-                  Small wins, every day
+                  Your personal space to make progress
                 </p>
               </div>
             </div>
@@ -268,7 +273,7 @@ export default function KaizenTracker() {
                 key={i}
                 onClick={stat.onClick}
                 className={cn(
-                  "relative overflow-hidden border border-border/50 bg-card/60 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-border hover:shadow-md",
+                  "kaizen-stat-card relative overflow-hidden rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md",
                   stat.color,
                   stat.onClick && "cursor-pointer hover:scale-[1.02]"
                 )}
@@ -340,7 +345,7 @@ export default function KaizenTracker() {
                     <Card
                       key={habit.id}
                       className={cn(
-                        "group border border-border/50 bg-card/70 backdrop-blur-sm transition-all duration-200 hover:border-border/80 hover:shadow-sm",
+                        "kaizen-habit-card group rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
                         isTargetMet &&
                           "bg-linear-to-r from-card/70 to-emerald-500/1"
                       )}
