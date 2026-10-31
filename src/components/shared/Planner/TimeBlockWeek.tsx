@@ -127,7 +127,7 @@ interface DragState {
   current: number
 }
 
-export function TimeBlockWeek() {
+export function TimeBlockWeek({ onBlockCreated }: { onBlockCreated?: (title: string, date: string) => Promise<boolean> }) {
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), WEEK_OPTIONS)
   )
@@ -136,6 +136,7 @@ export function TimeBlockWeek() {
 
   const [draft, setDraft] = useState<DraftBlock | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
+  const [linkError, setLinkError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [drag, setDrag] = useState<DragState | null>(null)
   const [now, setNow] = useState(() => new Date())
@@ -215,11 +216,22 @@ export function TimeBlockWeek() {
       end: draft.end,
       color: draft.color,
     }
+    const isNewBlock = !draft.id
     const ok = draft.id
       ? await updateBlock(draft.id, input)
       : await addBlock(input)
     setSaving(false)
-    if (ok) setDraft(null)
+    if (ok) {
+      setDraft(null)
+      if (isNewBlock && onBlockCreated) {
+        const taskCreated = await onBlockCreated(title, draft.date)
+        if (!taskCreated) {
+          setLinkError("Time block saved, but its task could not be added. Check the task planner error and try again.")
+        } else {
+          setLinkError(null)
+        }
+      }
+    }
   }
 
   const handleDelete = async () => {
@@ -337,6 +349,11 @@ export function TimeBlockWeek() {
         <div className="m-4 flex items-center gap-2.5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span className="font-medium">{error}</span>
+        </div>
+      )}
+      {linkError && (
+        <div role="alert" className="mx-4 mt-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-700 dark:text-amber-300">
+          {linkError}
         </div>
       )}
 
