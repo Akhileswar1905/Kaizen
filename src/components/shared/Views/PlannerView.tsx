@@ -47,11 +47,7 @@ import { cn } from "@/lib/utils"
 import { useTodos } from "@/hooks/useTodos"
 import { TimeBlockWeek } from "@/components/shared/Planner/TimeBlockWeek"
 
-interface PlannerViewProps {
-  onBack: () => void
-}
-
-export function PlannerView({ onBack }: PlannerViewProps) {
+export function PlannerView() {
   const [viewMode, setViewMode] = useState<"daily" | "calendar" | "blocks">(
     "daily"
   )
@@ -183,43 +179,36 @@ export function PlannerView({ onBack }: PlannerViewProps) {
   const nextMonth = () => setCalendarMonth(addMonths(calendarMonth, 1))
 
   return (
-    <div className="flex min-h-screen justify-center bg-background/50 px-3 py-6 font-sans text-foreground antialiased sm:px-6 sm:py-10 md:px-12 md:py-14">
+    <div className="planner-page min-h-screen px-3 py-5 text-foreground antialiased sm:px-6 sm:py-8">
       <div
         className={cn(
-          "w-full animate-in space-y-6 duration-500 fade-in slide-in-from-bottom-4",
-          viewMode === "blocks" ? "max-w-6xl" : "max-w-5xl"
+          "planner-shell mx-auto w-full animate-in space-y-6 duration-500 fade-in slide-in-from-bottom-4",
+          viewMode === "blocks" ? "max-w-6xl" : "max-w-6xl"
         )}
       >
         {/* Header Section */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onBack}
-              className="h-10 w-10 shrink-0 rounded-full bg-card/60 hover:bg-muted"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
             <div>
-              <h1 className="flex items-center gap-2 bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
-                <ListTodo className="h-6 w-6 text-primary" /> Task Planner
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">PERSONAL WORKSPACE</p>
+              <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl">
+                <ListTodo className="h-6 w-6 text-muted-foreground" /> Task planner
               </h1>
-              <p className="mt-0.5 text-sm font-medium text-muted-foreground/80">
-                Execute your specific tasks for the day.
+              <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                Make room for focused work, one day at a time.
               </p>
             </div>
           </div>
 
           {/* View Toggle */}
-          <div className="flex items-center rounded-lg bg-card/60 p-1 shadow-sm ring-1 ring-border/50 backdrop-blur-sm sm:w-auto">
+          <div className="planner-view-switch flex items-center rounded-xl border border-border/60 bg-card/70 p-1 shadow-sm backdrop-blur-xl sm:w-auto">
             <button
               onClick={() => setViewMode("daily")}
               className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-all sm:flex-none",
+                "flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all sm:flex-none",
                 viewMode === "daily"
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-muted text-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
               )}
             >
               <LayoutList className="h-4 w-4" />
@@ -228,10 +217,10 @@ export function PlannerView({ onBack }: PlannerViewProps) {
             <button
               onClick={() => setViewMode("calendar")}
               className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-all sm:flex-none",
+                "flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all sm:flex-none",
                 viewMode === "calendar"
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-muted text-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
               )}
             >
               <CalendarIcon className="h-4 w-4" />
@@ -240,10 +229,10 @@ export function PlannerView({ onBack }: PlannerViewProps) {
             <button
               onClick={() => setViewMode("blocks")}
               className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-1.5 text-sm font-medium transition-all sm:flex-none",
+                "flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all sm:flex-none",
                 viewMode === "blocks"
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-muted text-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
               )}
             >
               <CalendarClock className="h-4 w-4" />
@@ -251,6 +240,27 @@ export function PlannerView({ onBack }: PlannerViewProps) {
             </button>
           </div>
         </header>
+
+        <section className="planner-overview grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+          <div className="planner-welcome rounded-2xl border border-border/60 px-5 py-5 sm:px-6">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">PLAN WITH INTENTION</p>
+            <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{format(currentDate, "EEEE, MMMM d")}</h2>
+                <p className="mt-1 text-sm font-semibold text-muted-foreground">{activeTodos.length === 0 ? "A little space to plan what matters." : completedCount + " of " + activeTodos.length + " tasks completed"}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-24 overflow-hidden rounded-full bg-muted sm:w-32"><div className="h-full rounded-full bg-foreground/65 transition-all duration-500" style={{width: progressPct + "%"}} /></div>
+                <span className="text-sm font-bold tabular-nums">{progressPct}%</span>
+              </div>
+            </div>
+          </div>
+          <div className="planner-stat rounded-2xl border border-border/60 px-5 py-4 sm:min-w-36">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Open tasks</p>
+            <p className="mt-1 text-3xl font-bold tabular-nums">{activeTodos.length - completedCount}</p>
+            <p className="text-xs font-semibold text-muted-foreground">for this day</p>
+          </div>
+        </section>
 
         {/* Error banner */}
         {error && (
@@ -262,7 +272,7 @@ export function PlannerView({ onBack }: PlannerViewProps) {
 
         {/* Main Workspace */}
         {loading ? (
-          <Card className="overflow-hidden border border-border/50 bg-card/40 shadow-sm backdrop-blur-sm">
+          <Card className="planner-surface overflow-hidden border border-border/60 bg-card/75 shadow-sm backdrop-blur-xl">
             <CardContent className="flex h-72 flex-col items-center justify-center gap-3 p-0">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/60" />
               <p className="text-sm font-medium text-muted-foreground">
@@ -271,7 +281,7 @@ export function PlannerView({ onBack }: PlannerViewProps) {
             </CardContent>
           </Card>
         ) : (
-          <Card className="overflow-hidden border border-border/50 bg-card/40 shadow-sm backdrop-blur-sm">
+          <Card className="planner-surface overflow-hidden border border-border/60 bg-card/75 shadow-sm backdrop-blur-xl">
             {/* --- TIME BLOCKS VIEW --- */}
             {viewMode === "blocks" && (
               <CardContent className="p-0">

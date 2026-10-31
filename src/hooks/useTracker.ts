@@ -61,6 +61,7 @@ export function useTracker() {
 
   const [activeView, setActiveView] = useState<
     | "dashboard"
+    | "habits"
     | "dsa"
     | "journal"
     | "finance"
