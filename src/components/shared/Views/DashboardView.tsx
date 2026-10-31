@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react"
-import { addDays, format, isAfter, parseISO, startOfMonth, startOfWeek, subDays } from "date-fns"
+import { addDays, format, parseISO, startOfMonth, startOfWeek, subDays } from "date-fns"
 import * as Icons from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/AuthContext"
@@ -137,9 +137,6 @@ export function DashboardView({
   const netSavings = income - expenses
   const savingsRate = income > 0 ? Math.round((netSavings / income) * 100) : 0
 
-  const heatmapStart = subDays(weekStart, 77)
-  const heatmapDays = Array.from({ length: 84 }, (_, index) => addDays(heatmapStart, index))
-  const heatmapLevels = ["bg-muted/80", "bg-emerald-100 dark:bg-emerald-950/80", "bg-emerald-200 dark:bg-emerald-900", "bg-emerald-400 dark:bg-emerald-700", "bg-emerald-600 dark:bg-emerald-500"]
   const greeting = today.getHours() < 12 ? "Good morning." : today.getHours() < 17 ? "Good afternoon." : "Good evening."
 
   const activities = useMemo(() => {
@@ -236,18 +233,14 @@ export function DashboardView({
             </div>
 
             <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5">
-              <div className="flex items-center justify-between"><p className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">HABIT CONSISTENCY</p><p className="text-lg font-extrabold tabular-nums">{weeklyConsistency}%</p></div>
-              <div className="mt-3 grid grid-flow-col grid-cols-12 grid-rows-7 gap-1">
-                {heatmapDays.map((day) => {
-                  const key = format(day, "yyyy-MM-dd")
-                  const count = activeHabits.filter((habit) => logs[habit.id + "-" + key]).length
-                  const ratio = activeHabits.length ? count / activeHabits.length : 0
-                  const level = count === 0 ? 0 : ratio < 0.25 ? 1 : ratio < 0.5 ? 2 : ratio < 0.75 ? 3 : 4
-                  const future = isAfter(day, today)
-                  return <div key={key} title={future ? format(day, "MMM d") + " · Upcoming" : format(day, "MMM d") + " · " + count + " of " + activeHabits.length + " habits"} className={"aspect-square rounded-[3px] " + (future ? "bg-muted/30" : heatmapLevels[level])} />
-                })}
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">HABIT CONSISTENCY</p>
+                <p className="text-lg font-extrabold tabular-nums">{weeklyConsistency}%</p>
               </div>
-              <div className="mt-2 flex items-center justify-between text-[9px] text-muted-foreground"><span>Last 12 weeks</span><span className="flex items-center gap-1">Less {heatmapLevels.map((level, index) => <span key={index} className={"h-2 w-2 rounded-[2px] " + level} />)} More</span></div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-foreground/70 transition-all" style={{ width: weeklyConsistency + "%" }} />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">{weeklyCheckins} of {weeklyTarget} expected check-ins this week</p>
             </div>
 
             <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5">
