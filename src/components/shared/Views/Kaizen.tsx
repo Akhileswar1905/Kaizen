@@ -2,11 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
   Activity,
-  Loader2,
-  UserCircle,
   Flame,
   X,
-  Users,
   Snowflake, // Added Snowflake icon for the streak freeze
 } from "lucide-react"
 import { useTracker } from "@/hooks/useTracker"
@@ -310,6 +307,8 @@ export default function KaizenTracker() {
       {renderContent()}
 
       <FloatingMenu
+        onOpenDashboard={() => setActiveView("dashboard")}
+        onOpenHabits={() => setActiveView("habits")}
         onOpenDSA={() => setActiveView("dsa")}
         onOpenJournal={() => setActiveView("journal")}
         onOpenFinance={() => setActiveView("finance")}
