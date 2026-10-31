@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react"
 import { ArrowLeft, BookOpen, CheckCircle2, Circle, GraduationCap, Layers3, Loader2, Pencil, Plus, Search, Sparkles, Target, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
