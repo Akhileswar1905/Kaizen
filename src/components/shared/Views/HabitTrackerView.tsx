@@ -46,32 +46,25 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
   } = props
 
   return (
-      <div className="kaizen-desktop flex min-h-screen justify-center px-3 py-4 font-sans text-foreground antialiased sm:px-6 sm:py-8">
-        <div className="kaizen-window w-full max-w-5xl space-y-7 sm:space-y-9">
+      <div className="kaizen-desktop flex min-h-screen justify-center px-2 py-3 font-sans text-foreground antialiased sm:px-5 sm:py-6 xl:px-8">
+        <div className="kaizen-window w-full max-w-[1440px] space-y-7 sm:space-y-9">
           {/* Dedicated habit tracking workspace */}
-          <div className="space-y-8">
-            <header className="flex flex-col gap-6 border-b border-border/60 pb-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <img src="/light_icon.png" alt="" className="h-10 w-10 rounded-xl object-contain" />
-                <div>
-                  <p className="text-xl font-extrabold tracking-tight text-foreground">Kaizen</p>
-                  <p className="text-xs font-medium tracking-wide text-muted-foreground">PERSONAL GROWTH WORKSPACE</p>
-                </div>
+          <div className="space-y-7">
+            <header className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-bold tracking-[0.16em] text-muted-foreground">HABIT TRACKER</p>
+                <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Build your rhythm.</h1>
+                <p className="mt-1 text-sm text-muted-foreground">A little progress, repeated every day.</p>
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
-                <div className="text-left sm:text-right">
-                  <p className="text-sm font-semibold">{format(new Date(), "EEEE, d MMMM")}</p>
-                  <p className="text-xs text-muted-foreground">A little progress adds up.</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" onClick={onOpenStatus} className="h-9 w-9 rounded-xl" title="Your status"><UserCircle className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="icon" onClick={onOpenMultiplayer} className="h-9 w-9 rounded-xl" title="Multiplayer"><Users className="h-4 w-4" /></Button>
-                  <AddHabitModal onAddHabit={addHabit} />
-                </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-sm font-semibold text-muted-foreground">{format(new Date(), "EEEE, d MMMM")}</span>
+                <Button variant="outline" size="icon" onClick={onOpenStatus} className="h-9 w-9 rounded-xl" title="Your status"><UserCircle className="h-4 w-4" /></Button>
+                <Button variant="outline" size="icon" onClick={onOpenMultiplayer} className="h-9 w-9 rounded-xl" title="Multiplayer"><Users className="h-4 w-4" /></Button>
+                <AddHabitModal onAddHabit={addHabit} />
               </div>
             </header>
 
-            <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+            <section className="grid grid-cols-1 gap-6">
               <div className="min-w-0 space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
@@ -105,7 +98,7 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
                     </div>
                   ) : (
                     <div className="divide-y divide-border/60">
-                      <div className="hidden grid-cols-[minmax(150px,1fr)_repeat(7,36px)_84px] items-center gap-2 bg-muted/35 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground sm:grid">
+                      <div className="hidden grid-cols-[minmax(220px,1fr)_repeat(7,minmax(40px,52px))_100px] items-center gap-3 bg-muted/35 px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground sm:grid">
                         <span>Routine</span>
                         {currentWeekDays.map((date) => <span key={format(date, "yyyy-MM-dd")} className="text-center">{format(date, "EEEEE")}</span>)}
                         <span className="text-right">Progress</span>
@@ -116,7 +109,7 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
                         const isTargetMet = completedCount >= habit.target_days
                         const IconComponent = (Icons as any)[habit.icon_name] || Activity
                         return (
-                          <div key={habit.id} className="grid grid-cols-1 gap-3 px-4 py-4 transition-colors hover:bg-muted/20 sm:grid-cols-[minmax(150px,1fr)_repeat(7,36px)_84px] sm:items-center sm:gap-2 sm:px-5">
+                          <div key={habit.id} className="grid grid-cols-1 gap-3 px-4 py-4 transition-colors hover:bg-muted/20 sm:grid-cols-[minmax(220px,1fr)_repeat(7,minmax(40px,52px))_100px] sm:items-center sm:gap-3 sm:px-6">
                             <div className="flex min-w-0 items-center gap-3">
                               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground"><IconComponent className="h-4 w-4" /></span>
                               <div className="min-w-0 flex-1">
@@ -149,7 +142,7 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
                   )}
                 </div>
 
-                <div className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5">
+                <div className="rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <div><h2 className="font-bold">Consistency over time</h2><p className="mt-0.5 text-xs text-muted-foreground">Your effort, one day at a time</p></div>
                     <Activity className="h-4 w-4 text-muted-foreground" />
