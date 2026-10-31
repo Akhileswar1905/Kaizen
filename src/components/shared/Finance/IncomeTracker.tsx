@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import type { FormEvent } from "react"
 import { format, parseISO } from "date-fns"
 import { Plus, Trash2, Wallet, Loader2, CalendarDays } from "lucide-react"
 import { supabase } from "@/lib/supabase"
@@ -19,35 +20,78 @@ export function IncomeTracker() {
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"))
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const load = async () => {
-    if (!user?.id) return
-    const { data, error } = await supabase.from("expenses").select("*").eq("type", "income").order("date", { ascending: false }).order("created_at", { ascending: false })
-    if (!error && data) setItems(data)
+    if (!user?.id) {
+      setItems([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    setErrorMessage(null)
+    const { data, error } = await supabase
+      .from("expenses")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("type", "income")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      setErrorMessage(error.message.includes("type") || error.code === "42703" || error.code === "PGRST204"
+        ? "Income tracking needs a database update. Run supabase/income_tracking.sql in your Supabase SQL Editor, then reload this page."
+        : "Could not load income: " + error.message)
+    } else {
+      setItems(data ?? [])
+    }
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [user?.id])
+  useEffect(() => { void load() }, [user?.id])
 
-  const addIncome = async (event: React.FormEvent) => {
+  const addIncome = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!user?.id || !title.trim() || Number(amount) <= 0) return
+    setErrorMessage(null)
+    setSuccessMessage(null)
+    const parsedAmount = Number(amount)
+    if (!user?.id) { setErrorMessage("Please sign in again before adding income."); return }
+    if (!title.trim()) { setErrorMessage("Enter a description for this income."); return }
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) { setErrorMessage("Enter an amount greater than zero."); return }
+
     setSaving(true)
-    const { data, error } = await supabase.from("expenses").insert({ user_id: user.id, title: title.trim(), amount: Number(amount), category, type: "income", date }).select().single()
-    if (!error && data) {
-      setItems((current) => [data, ...current])
-      setTitle("")
-      setAmount("")
-      setDate(format(new Date(), "yyyy-MM-dd"))
+    try {
+      const { data, error } = await supabase.from("expenses").insert({
+        user_id: user.id, title: title.trim(), amount: parsedAmount, category, type: "income", date,
+      }).select().single()
+      if (error) {
+        if (error.message.includes("type") || error.code === "42703" || error.code === "PGRST204") {
+          throw new Error("Income tracking needs a database update. Run supabase/income_tracking.sql in your Supabase SQL Editor, then reload this page.")
+        }
+        throw new Error(error.message)
+      }
+      if (data) {
+        setItems((current) => [data, ...current])
+        setTitle("")
+        setAmount("")
+        setDate(format(new Date(), "yyyy-MM-dd"))
+        setSuccessMessage("Income saved successfully.")
+      }
+    } catch (cause) {
+      setErrorMessage(cause instanceof Error ? cause.message : "Could not save income. Please try again.")
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   const removeIncome = async (id: string) => {
+    setErrorMessage(null)
     const { error } = await supabase.from("expenses").delete().eq("id", id).eq("user_id", user?.id).eq("type", "income")
-    if (!error) setItems((current) => current.filter((item) => item.id !== id))
+    if (error) { setErrorMessage("Could not delete this income entry: " + error.message); return }
+    setItems((current) => current.filter((item) => item.id !== id))
   }
-
   const total = items.reduce((sum, item) => sum + Number(item.amount), 0)
   const thisMonth = items.filter((item) => item.date && item.date.slice(0, 7) === format(new Date(), "yyyy-MM")).reduce((sum, item) => sum + Number(item.amount), 0)
 
@@ -58,6 +102,8 @@ export function IncomeTracker() {
     </div>
     <Card className="border-border/60 bg-card"><CardContent className="p-5 sm:p-6">
       <div className="mb-5"><h2 className="text-lg font-extrabold">Add income</h2><p className="text-sm text-muted-foreground">Record salary, freelance payments or other money received.</p></div>
+      {errorMessage && <div role="alert" className="mb-4 rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm font-semibold text-destructive">{errorMessage}</div>}
+      {successMessage && <div role="status" className="mb-4 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-foreground">{successMessage}</div>}
       <form onSubmit={addIncome} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="space-y-2"><label className="text-xs font-semibold text-muted-foreground">Source / Description</label><Input value={title} onChange={(e)=>setTitle(e.target.value)} placeholder="e.g. Monthly salary" required /></div>
         <div className="space-y-2"><label className="text-xs font-semibold text-muted-foreground">Amount (₹)</label><Input type="number" min="0.01" step="0.01" value={amount} onChange={(e)=>setAmount(e.target.value)} placeholder="0.00" required /></div>
