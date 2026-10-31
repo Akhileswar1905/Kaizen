@@ -285,7 +285,7 @@ export function PlannerView() {
             {/* --- TIME BLOCKS VIEW --- */}
             {viewMode === "blocks" && (
               <CardContent className="p-0">
-                <TimeBlockWeek onBlockCreated={async (title, date) => Boolean(await addTodo(title, "", date))} />
+                <TimeBlockWeek />
               </CardContent>
             )}
 
