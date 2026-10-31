@@ -29,6 +29,7 @@ type DashboardProps = {
   dsaCompleted: string[]
   setActiveView: (view: any) => void
   onOpenStatus: () => void
+  onOpenFinanceTab: (tab: "income" | "expenses") => void
 }
 
 const money = (amount: number) => "₹" + amount.toLocaleString("en-IN", { maximumFractionDigits: 0 })
@@ -54,13 +55,13 @@ export function DashboardView({
   dsaCompleted,
   setActiveView,
   onOpenStatus,
+  onOpenFinanceTab,
 }: DashboardProps) {
   const { user } = useAuth()
   const { todos, loading: todosLoading, toggleTodo } = useTodos()
   const { items: learningItems, isLoading: learningLoading } = useLearningChecklist()
   const today = new Date()
   const todayKey = format(today, "yyyy-MM-dd")
-  const monthKey = format(today, "yyyy-MM")
   const activeHabits = habits.filter((habit) => !habit.is_archived)
   const todayTodos = todos.filter((todo) => todo.date === todayKey)
   const pendingTodos = todayTodos.filter((todo) => !todo.completed)
@@ -182,10 +183,10 @@ export function DashboardView({
             {[
               { title: "Add task", description: "Plan work", icon: Icons.ListPlus, view: "planner" },
               { title: "Log habit", description: "Track progress", icon: Icons.Target, view: "habits" },
-              { title: "Add income", description: "Money received", icon: Icons.TrendingUp, view: "finance" },
-              { title: "Add expense", description: "Money spent", icon: Icons.Wallet, view: "finance" },
+              { title: "Add income", description: "Money received", icon: Icons.TrendingUp, action: () => onOpenFinanceTab("income") },
+              { title: "Add expense", description: "Money spent", icon: Icons.Wallet, action: () => onOpenFinanceTab("expenses") },
             ].map((action) => (
-              <button key={action.title} onClick={() => setActiveView(action.view)} className="group flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-border/70 bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-foreground/25 hover:shadow-sm">
+              <button key={action.title} onClick={action.action ?? (() => setActiveView(action.view))} className="group flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-border/70 bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-foreground/25 hover:shadow-sm">
                 <action.icon className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-foreground" />
                 <span><span className="block text-sm font-extrabold">{action.title}</span><span className="mt-0.5 block text-xs text-muted-foreground">{action.description}</span></span>
               </button>
