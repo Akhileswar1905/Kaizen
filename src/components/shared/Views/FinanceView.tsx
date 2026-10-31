@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ExpenseTracker } from "../Finance/ExpenseTracker"
 import { VarsityTracker } from "../Finance/FinanceCourse"
 
-export function FinanceView() {
+export function FinanceView({ initialTab = "expenses" }: { initialTab?: "income" | "expenses" | "courses" }) {
   return (
     <div className="min-h-screen w-full bg-background px-3 py-5 font-sans text-foreground antialiased sm:px-6 sm:py-8 xl:px-10">
       <div className="mx-auto w-full max-w-[1440px] space-y-6">
@@ -15,7 +15,7 @@ export function FinanceView() {
         </header>
 
         {/* Tabs for switching between Expenses and Courses */}
-        <Tabs defaultValue="expenses" className="w-full">
+        <Tabs key={initialTab} defaultValue={initialTab} className="w-full">
           <TabsList className="mb-6 grid h-auto w-full grid-cols-3">
             <TabsTrigger value="income" className="flex gap-2"><TrendingUp className="h-4 w-4" /> Income</TabsTrigger>
             <TabsTrigger value="expenses" className="flex gap-2">
