@@ -152,25 +152,82 @@ export default function KaizenTracker() {
     }
 
     return (
-      <div className="kaizen-desktop flex min-h-screen justify-center px-3 py-6 font-sans text-foreground antialiased sm:px-6 sm:py-10">
-        <div className="kaizen-window w-full max-w-6xl space-y-8 sm:space-y-10">
-          <header className="flex flex-col gap-5 border-b border-border/60 pb-6 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><img src="/light_icon.png" alt="" className="h-11 w-11 rounded-xl object-contain" /><div><p className="text-xl font-extrabold tracking-tight">Kaizen</p><p className="text-xs font-semibold tracking-wide text-muted-foreground">YOUR PERSONAL GROWTH WORKSPACE</p></div></div><div className="text-sm sm:text-right"><p className="font-semibold">{format(new Date(), "EEEE, d MMMM")}</p><p className="text-xs text-muted-foreground">A little progress adds up.</p></div></header>
-          <section className="space-y-2"><p className="text-xs font-bold tracking-[0.18em] text-muted-foreground">YOUR SPACE</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Good things grow with consistency.</h1><p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">A clear overview of the areas you use to build better routines, learn, and stay organised.</p></section>
-          <section className="grid gap-4 sm:grid-cols-3"><div className="rounded-2xl border border-border/70 bg-card p-5"><p className="text-xs font-semibold text-muted-foreground">ACTIVE HABITS</p><p className="mt-3 text-3xl font-bold tabular-nums">{habits.filter((h) => !h.is_archived).length}</p><p className="mt-1 text-xs text-muted-foreground">Routines in your tracker</p></div><div className="rounded-2xl border border-border/70 bg-card p-5"><p className="text-xs font-semibold text-muted-foreground">THIS WEEK</p><p className="mt-3 text-3xl font-bold tabular-nums">{weekCompletionPct}%</p><p className="mt-1 text-xs text-muted-foreground">{checksThisWeek} completed check-ins</p></div><button onClick={() => setIsStatusOpen(true)} className="rounded-2xl border border-border/70 bg-card p-5 text-left transition-colors hover:bg-muted/40"><p className="text-xs font-semibold text-muted-foreground">YOUR PROGRESS</p><p className="mt-3 text-3xl font-bold">Level {playerStats?.level ?? 1}</p><p className="mt-1 text-xs text-muted-foreground">View your Kaizen status</p></button></section>
-          <section className="space-y-4"><div><h2 className="text-lg font-bold">Workspaces</h2><p className="text-xs text-muted-foreground">Jump back into what matters today.</p></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[
-            { id: "habits", title: "Habit tracker", detail: "Daily check-ins, streaks and consistency", icon: "◷" },
-            { id: "planner", title: "Task planner", detail: "Plan your days and manage priorities", icon: "▦" },
-            { id: "learning-checklist", title: "Learning space", detail: "Track topics, goals and study progress", icon: "⌘" },
-            { id: "dsa", title: "DSA practice", detail: "Topics, problems and coding notes", icon: "⌁" },
-            { id: "notes", title: "Notes", detail: "Keep useful ideas and references close", icon: "≡" },
-            { id: "journal", title: "Journal", detail: "Capture thoughts and reflections", icon: "✎" },
-            { id: "workout-tracker", title: "Workout", detail: "Stay consistent with your training", icon: "↗" },
-            { id: "time-audit", title: "Time audit", detail: "Understand where your time goes", icon: "◷" },
-            { id: "finance", title: "Finance", detail: "Keep an eye on your finances", icon: "₹" },
-            { id: "system-design", title: "System design", detail: "Learn and revise architecture concepts", icon: "◇" },
-          ].map((item) => <button key={item.id} onClick={() => setActiveView(item.id as any)} className="group flex min-h-32 items-start gap-4 rounded-2xl border border-border/70 bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:border-foreground/20 hover:bg-muted/30 hover:shadow-sm"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-lg font-semibold text-foreground">{item.icon}</span><span className="min-w-0"><span className="block font-bold">{item.title}</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{item.detail}</span><span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground group-hover:text-foreground">Open workspace <span aria-hidden="true">↗</span></span></span></button>)}</div></section>
+      <main className="kaizen-dashboard min-h-screen w-full px-3 pb-28 pt-5 text-foreground antialiased sm:px-6 sm:pt-8 xl:px-10">
+        <div className="mx-auto w-full max-w-[1440px] space-y-8">
+          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
+            <div className="flex items-center gap-3">
+              <img src="/light_icon.png" alt="" className="h-10 w-10 rounded-xl object-contain" />
+              <div><p className="text-xl font-extrabold tracking-tight">Kaizen</p><p className="text-[11px] font-bold tracking-[0.15em] text-muted-foreground">PERSONAL GROWTH WORKSPACE</p></div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="hidden text-right sm:block"><p className="text-sm font-bold">{format(new Date(), "EEEE, d MMMM")}</p><p className="text-xs text-muted-foreground">Make today count.</p></div>
+              <Button variant="outline" size="icon" onClick={() => setIsStatusOpen(true)} className="h-10 w-10 rounded-xl" title="Your progress"><Icons.UserRound className="h-4 w-4" /></Button>
+            </div>
+          </header>
+
+          <section className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.75fr)]">
+            <div className="relative overflow-hidden rounded-[1.75rem] border border-border/70 bg-card p-6 sm:p-9">
+              <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-muted/70 blur-3xl" />
+              <div className="relative max-w-2xl">
+                <p className="text-xs font-bold tracking-[0.18em] text-muted-foreground">YOUR SPACE, AT A GLANCE</p>
+                <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">Small steps.<br />Steady progress.</h1>
+                <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">A calmer place to build routines, make time for what matters, and keep growing a little every day.</p>
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <Button onClick={() => setActiveView("habits")} className="h-11 rounded-xl px-5 font-bold"><Icons.CheckCircle2 className="mr-2 h-4 w-4" />Go to habits</Button>
+                  <Button variant="outline" onClick={() => setActiveView("planner")} className="h-11 rounded-xl px-5 font-bold"><Icons.CalendarDays className="mr-2 h-4 w-4" />Plan your day</Button>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-1">
+              <div className="rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
+                <div className="flex items-center justify-between gap-2"><p className="text-xs font-bold tracking-wide text-muted-foreground">WEEKLY CONSISTENCY</p><Icons.ChartNoAxesColumnIncreasing className="h-4 w-4 text-muted-foreground" /></div>
+                <p className="mt-3 text-4xl font-extrabold tabular-nums">{weekCompletionPct}<span className="ml-1 text-xl text-muted-foreground">%</span></p>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-foreground/75 transition-all" style={{ width: Math.max(0, Math.min(100, weekCompletionPct)) + "%" }} /></div>
+                <p className="mt-2 text-xs text-muted-foreground">{checksThisWeek} check-ins completed this week</p>
+              </div>
+              <button onClick={() => setIsStatusOpen(true)} className="rounded-2xl border border-border/70 bg-card p-5 text-left transition-colors hover:bg-muted/40 sm:p-6">
+                <div className="flex items-center justify-between gap-2"><p className="text-xs font-bold tracking-wide text-muted-foreground">YOUR LEVEL</p><Icons.Orbit className="h-4 w-4 text-muted-foreground" /></div>
+                <p className="mt-3 text-4xl font-extrabold tabular-nums">{playerStats?.level ?? 1}</p><p className="mt-2 text-xs text-muted-foreground">Open your progress and achievements</p>
+              </button>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <div className="flex flex-wrap items-end justify-between gap-2"><div><p className="text-xs font-bold tracking-[0.16em] text-muted-foreground">JUMP BACK IN</p><h2 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">Your everyday workspaces</h2></div><p className="text-xs text-muted-foreground">Pick up where you left off</p></div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <button onClick={() => setActiveView("habits")} className="group flex min-h-44 items-start justify-between gap-5 rounded-2xl border border-border/70 bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:border-foreground/25 hover:shadow-md sm:p-6">
+                <span><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted"><Icons.CalendarCheck className="h-5 w-5" /></span><span className="mt-5 block text-lg font-extrabold">Habit tracker</span><span className="mt-1 block max-w-sm text-sm text-muted-foreground">Build routines with daily check-ins and streaks.</span><span className="mt-4 block text-xs font-bold text-muted-foreground">{habits.filter((h) => !h.is_archived).length} active habits</span></span>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground group-hover:text-foreground"><Icons.ArrowUpRight className="h-4 w-4" /></span>
+              </button>
+              <button onClick={() => setActiveView("planner")} className="group flex min-h-44 items-start justify-between gap-5 rounded-2xl border border-border/70 bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:border-foreground/25 hover:shadow-md sm:p-6">
+                <span><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted"><Icons.CalendarDays className="h-5 w-5" /></span><span className="mt-5 block text-lg font-extrabold">Task planner</span><span className="mt-1 block max-w-sm text-sm text-muted-foreground">Shape your day and keep important work moving.</span><span className="mt-4 block text-xs font-bold text-muted-foreground">Daily planning</span></span>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground group-hover:text-foreground"><Icons.ArrowUpRight className="h-4 w-4" /></span>
+              </button>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <div><p className="text-xs font-bold tracking-[0.16em] text-muted-foreground">MORE TOOLS</p><h2 className="mt-1 text-xl font-extrabold tracking-tight">Everything else, in one place</h2></div>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                { id: "learning-checklist", title: "Learning space", description: "Keep learning goals and topics on track.", icon: Icons.GraduationCap, meta: "Study progress" },
+                { id: "dsa", title: "DSA practice", description: "Work through problems and revisit notes.", icon: Icons.Braces, meta: "Problem solving" },
+                { id: "notes", title: "Notes", description: "Save ideas, references and useful details.", icon: Icons.NotebookPen, meta: "Knowledge base" },
+                { id: "journal", title: "Journal", description: "Make space for reflection and daily thoughts.", icon: Icons.BookOpen, meta: "Personal reflection" },
+                { id: "workout-tracker", title: "Workout", description: "Keep your training consistent over time.", icon: Icons.Dumbbell, meta: "Training log" },
+                { id: "time-audit", title: "Time audit", description: "See how your time is spent.", icon: Icons.Clock3, meta: "Time awareness" },
+                { id: "finance", title: "Finance", description: "Track your money and stay intentional.", icon: Icons.Wallet, meta: "Money overview" },
+                { id: "system-design", title: "System design", description: "Organise architecture concepts and revision.", icon: Icons.Network, meta: "Technical learning" },
+              ].map((item) => (
+                <button key={item.id} onClick={() => setActiveView(item.id as any)} className="group flex min-h-36 items-start gap-3 rounded-2xl border border-border/70 bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-foreground/25 hover:bg-muted/20 hover:shadow-sm">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted"><item.icon className="h-[18px] w-[18px]" /></span>
+                  <span className="min-w-0 flex-1"><span className="block font-bold">{item.title}</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{item.description}</span><span className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground group-hover:text-foreground">{item.meta}<Icons.ArrowUpRight className="h-3 w-3" /></span></span>
+                </button>
+              ))}
+            </div>
+          </section>
         </div>
-      </div>
+      </main>
     )
   }
 
