@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { useLearningChecklist, type LearningChecklistItem } from "@/hooks/useLearningChecklist"
 
-type Props = { onBack: () => void }
 type Filter = "all" | "pending" | "completed"
 export function LearningChecklistView() {
   const { items, categories, isLoading, errorMessage, createItem, updateItem, deleteItem, addCategory } = useLearningChecklist()
