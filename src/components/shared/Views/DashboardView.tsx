@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { addDays, format, isAfter, parseISO, startOfMonth, startOfWeek, subDays } from "date-fns"
 import * as Icons from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -34,7 +34,7 @@ type DashboardProps = {
 
 const money = (amount: number) => "₹" + amount.toLocaleString("en-IN", { maximumFractionDigits: 0 })
 
-function SectionHeading({ eyebrow, title, action }: { eyebrow?: string; title: string; action?: React.ReactNode }) {
+function SectionHeading({ eyebrow, title, action }: { eyebrow?: string; title: string; action?: ReactNode }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-2">
       <div>
@@ -149,6 +149,13 @@ export function DashboardView({
     todos.filter((todo) => todo.completed && todo.date <= todayKey).forEach((todo) => {
       rows.push({ id: "task-" + todo.id, title: "Completed " + todo.title, detail: "Task planner", date: todo.date, kind: "task" })
     })
+    learningItems.forEach((item) => {
+      const updatedAt = (item as typeof item & { updated_at?: string }).updated_at
+      if (item.is_completed && updatedAt) {
+        const date = updatedAt.slice(0, 10)
+        if (date <= todayKey) rows.push({ id: "learning-" + item.id, title: "Completed " + item.title, detail: "Learning space · " + item.category, date, kind: "task" })
+      }
+    })
     recentTransactions.forEach((entry) => {
       rows.push({ id: "finance-" + entry.id, title: entry.title, detail: entry.type === "income" ? "Income recorded · " + entry.category : "Expense recorded · " + entry.category, date: entry.date, kind: "finance", amount: Number(entry.amount), type: entry.type })
     })
@@ -156,7 +163,7 @@ export function DashboardView({
       .filter((row) => row.date <= todayKey && row.date >= format(subDays(today, 30), "yyyy-MM-dd"))
       .sort((a, b) => b.date.localeCompare(a.date))
       .slice(0, 5)
-  }, [logs, activeHabits, todayKey, todos, recentTransactions])
+  }, [logs, activeHabits, todayKey, todos, recentTransactions, learningItems])
 
   return (
     <main className="kaizen-dashboard min-h-screen w-full px-3 pb-28 pt-5 text-foreground antialiased sm:px-6 sm:pt-8 xl:px-10">
@@ -181,12 +188,12 @@ export function DashboardView({
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
-              { title: "Add task", description: "Plan work", icon: Icons.ListPlus, view: "planner" },
-              { title: "Log habit", description: "Track progress", icon: Icons.Target, view: "habits" },
+              { title: "Add task", description: "Plan work", icon: Icons.ListPlus, action: () => setActiveView("planner") },
+              { title: "Log habit", description: "Track progress", icon: Icons.Target, action: () => setActiveView("habits") },
               { title: "Add income", description: "Money received", icon: Icons.TrendingUp, action: () => onOpenFinanceTab("income") },
               { title: "Add expense", description: "Money spent", icon: Icons.Wallet, action: () => onOpenFinanceTab("expenses") },
             ].map((action) => (
-              <button key={action.title} onClick={action.action ?? (() => setActiveView(action.view))} className="group flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-border/70 bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-foreground/25 hover:shadow-sm">
+              <button key={action.title} onClick={action.action} className="group flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-border/70 bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-foreground/25 hover:shadow-sm">
                 <action.icon className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-foreground" />
                 <span><span className="block text-sm font-extrabold">{action.title}</span><span className="mt-0.5 block text-xs text-muted-foreground">{action.description}</span></span>
               </button>
