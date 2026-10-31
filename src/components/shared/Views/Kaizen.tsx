@@ -128,7 +128,7 @@ export default function KaizenTracker() {
       return <div className="kaizen-page kaizen-page--habits"><HabitTrackerView habits={habits} logs={logs} currentWeekStart={currentWeekStart} isLoading={isLoading} toggleHabit={toggleHabit} nextWeek={nextWeek} prevWeek={prevWeek} checksThisWeek={checksThisWeek} weekCompletionPct={weekCompletionPct} currentWeekDays={currentWeekDays} addHabit={addHabit} updateHabit={updateHabit} deleteHabit={deleteHabit} sundayReview={sundayReview} setSundayReview={setSundayReview} saveWeeklyReview={saveWeeklyReview} isSavingReview={isSavingReview} getHabitStreakDetails={getHabitStreakDetails} highestActiveStreak={highestActiveStreak} onOpenStatus={() => setIsStatusOpen(true)} onOpenMultiplayer={() => setIsMultiplayerOpen(true)} onOpenStreaks={() => setIsStreaksModalOpen(true)} /></div>
     }
     if (activeView === "dsa") {
-      return <div className="kaizen-page kaizen-page--dsa"><DsaSheet onBack={() => setActiveView("dashboard")} /></div>
+      return <div className="kaizen-page kaizen-page--dsa"><DsaSheet /></div>
     }
     if (activeView === "journal") {
       return <div className="kaizen-page kaizen-page--journal"><JournalView onBack={() => setActiveView("dashboard")} /></div>
@@ -146,7 +146,7 @@ export default function KaizenTracker() {
       return <div className="kaizen-page kaizen-page--workout"><WorkoutTracker onBack={() => setActiveView("dashboard")} /></div>
     }
     if (activeView === "planner") {
-      return <div className="kaizen-page kaizen-page--planner"><PlannerView onBack={() => setActiveView("dashboard")} /></div>
+      return <div className="kaizen-page kaizen-page--planner"><PlannerView /></div>
     }
     if (activeView === "time-audit") {
       return <div className="kaizen-page kaizen-page--time-audit"><TimeAuditView onBack={() => setActiveView("dashboard")} /></div>
