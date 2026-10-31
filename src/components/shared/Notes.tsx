@@ -380,7 +380,6 @@ export function NotesTracker() {
     setContent("")
     setSelectedTag(categories.length > 0 ? categories[0].name : "General")
     setSelectedFolderId(activeFilterFolder)
-    setWorkspaceMode("edit")
     setMobileView("editor")
   }
 
@@ -424,7 +423,6 @@ export function NotesTracker() {
 
     clearDraft()
     setIsEditing(false)
-    setWorkspaceMode("preview")
     setIsSubmitting(false)
   }
 
