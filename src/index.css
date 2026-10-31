@@ -913,3 +913,49 @@ h1,h2,h3,h4,h5,h6 { font-weight:700; letter-spacing:-0.015em; }
   }
 }
 
+/* Shared dashboard-style workspace layout:
+   all tool pages use the same open canvas and content rhythm as Dashboard.
+   Individual cards remain responsible for their own surfaces. */
+.kaizen-page {
+  width: 100%;
+  min-height: 100svh;
+  padding: 1.5rem 1rem 7.5rem !important;
+  background: var(--background) !important;
+}
+
+.kaizen-page > * {
+  width: min(100%, 1440px) !important;
+  min-height: 0 !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.kaizen-page > *::before {
+  display: none !important;
+}
+
+/* Match the dashboard's comfortable section spacing and card language. */
+.kaizen-page section {
+  scroll-margin-top: 1.5rem;
+}
+
+.kaizen-page [class*="rounded-2xl"][class*="border"],
+.kaizen-page [class*="rounded-xl"][class*="border"] {
+  border-color: color-mix(in oklch, var(--border) 82%, transparent);
+}
+
+@media (max-width: 640px) {
+  .kaizen-page {
+    padding: 1rem 0.75rem 7rem !important;
+  }
+  .kaizen-page > * {
+    width: 100% !important;
+  }
+}
+
