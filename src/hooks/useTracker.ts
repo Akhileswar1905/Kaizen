@@ -368,7 +368,8 @@ export function useTracker() {
       .select("*")
       .eq("week_start_date", formattedDate)
       .eq("user_id", userId)
-      .single()
+      .limit(1)
+      .maybeSingle()
 
     if (reviewData) {
       setSundayReview({
