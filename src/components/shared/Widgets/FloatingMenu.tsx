@@ -6,6 +6,8 @@ import {
   Calendar,
   GraduationCap,
   Grid2x2,
+  LayoutDashboard,
+  Target,
   ListChecks,
   StickyNote,
   Wallet,
@@ -15,6 +17,8 @@ import { cn } from "@/lib/utils"
 const HIDDEN_MENU_ITEMS = ["journal", "system-design", "workout-tracker", "time-audit"] as const
 
 interface FloatingMenuProps {
+  onOpenDashboard: () => void
+  onOpenHabits: () => void
   onOpenDSA: () => void
   onOpenJournal: () => void
   onOpenFinance: () => void
@@ -28,6 +32,8 @@ interface FloatingMenuProps {
 }
 
 export function FloatingMenu({
+  onOpenDashboard,
+  onOpenHabits,
   onOpenDSA,
   onOpenJournal,
   onOpenFinance,
@@ -40,6 +46,8 @@ export function FloatingMenu({
   activeView,
 }: FloatingMenuProps) {
   const items = [
+    { label: "Dashboard", icon: LayoutDashboard, action: onOpenDashboard },
+    { label: "Habits", icon: Target, action: onOpenHabits },
     { label: "DSA", icon: GraduationCap, action: onOpenDSA },
     { label: "Finance", icon: Wallet, action: onOpenFinance },
     { label: "Notes", icon: StickyNote, action: () => onOpenNotes?.() },
@@ -65,7 +73,7 @@ export function FloatingMenu({
             className={cn(
               "h-10 w-10 shrink-0 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary sm:h-12 sm:w-12",
               "focus-visible:ring-2 focus-visible:ring-primary",
-              activeView === ({ DSA: "dsa", Finance: "finance", Notes: "notes", Planner: "planner", Learning: "learning-checklist", Journal: "journal", "System design": "system-design", Workout: "workout-tracker", "Time audit": "time-audit" } as Record<string, string>)[item.label]
+              activeView === ({ Dashboard: "dashboard", Habits: "habits", DSA: "dsa", Finance: "finance", Notes: "notes", Planner: "planner", Learning: "learning-checklist", Journal: "journal", "System design": "system-design", Workout: "workout-tracker", "Time audit": "time-audit" } as Record<string, string>)[item.label]
                 ? "is-active bg-foreground/10 text-foreground shadow-sm ring-1 ring-foreground/10 hover:bg-foreground/10 hover:text-foreground"
                 : "text-muted-foreground"
             )}
