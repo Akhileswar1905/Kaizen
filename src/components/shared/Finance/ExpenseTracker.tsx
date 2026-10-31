@@ -159,6 +159,7 @@ export function ExpenseTracker() {
       title,
       amount: parseFloat(amount),
       category,
+      type: "expense",
       date: format(date, "yyyy-MM-dd"),
     }
 
