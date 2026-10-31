@@ -132,6 +132,7 @@ export function ExpenseTracker() {
     const { data, error } = await supabase
       .from("expenses")
       .select("*")
+      .eq("type", "expense")
       .order("date", { ascending: false })
       .order("created_at", { ascending: false })
 
@@ -159,6 +160,7 @@ export function ExpenseTracker() {
       title,
       amount: parseFloat(amount),
       category,
+      type: "expense",
       date: format(date, "yyyy-MM-dd"),
     }
 
@@ -328,7 +330,7 @@ export function ExpenseTracker() {
   // --- RENDER ---
   if (loading)
     return (
-      <div className="mx-auto max-w-6xl animate-pulse space-y-6 p-6">
+      <div className="mx-auto max-w-[1440px] animate-pulse space-y-6 p-6">
         <div className="h-32 rounded-2xl bg-muted/20" />
         <div className="flex gap-6">
           <div className="h-64 flex-1 rounded-2xl bg-muted/10" />

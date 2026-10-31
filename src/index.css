@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -7,8 +8,7 @@
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: "Inter Variable", -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "SF Pro Text", sans-serif;
+  --font-sans: "Comic Neue", "Comic Sans MS", cursive;
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -192,15 +192,10 @@
     /*
      * macOS-like system typography
      */
-    font-family:
-      "Inter Variable",
-      -apple-system,
-      BlinkMacSystemFont,
-      "SF Pro Display",
-      "SF Pro Text",
-      sans-serif;
-
-    letter-spacing: -0.011em;
+    font-family: "Comic Neue", "Comic Sans MS", cursive;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    background: var(--background);
   }
 
   button:not(:disabled),
@@ -276,3 +271,691 @@
   border: 3px solid transparent;
   background-clip: content-box;
 }
+
+/* Kaizen — quiet macOS desktop surfaces, without a traditional navigation bar. */
+.kaizen-desktop {
+  background:
+    radial-gradient(ellipse at 12% 8%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 34rem),
+    radial-gradient(ellipse at 88% 88%, color-mix(in oklch, oklch(0.78 0.12 75) 12%, transparent), transparent 30rem),
+    var(--background);
+}
+.kaizen-window {
+  position: relative;
+  isolation: isolate;
+  padding: clamp(1.1rem, 3vw, 2rem) clamp(1rem, 3vw, 2.25rem) 2rem;
+  border: 1px solid color-mix(in oklch, var(--border) 78%, transparent);
+  border-radius: 1.75rem;
+  background: color-mix(in oklch, var(--card) 88%, transparent);
+  box-shadow: 0 32px 100px -52px oklch(0.16 0.025 260 / 0.34), 0 4px 16px oklch(0.16 0.025 260 / 0.045);
+  backdrop-filter: blur(28px) saturate(1.25);
+}
+.dark .kaizen-window { background: color-mix(in oklch, var(--card) 88%, transparent); box-shadow: 0 28px 90px -42px oklch(0 0 0 / 0.8); }
+.kaizen-titlebar { display:flex; align-items:center; gap:0.55rem; min-height:2.4rem; margin:-0.15rem 0 1.15rem; color:var(--muted-foreground); font-size:0.78rem; font-weight:700; letter-spacing:0.025em; }
+.kaizen-traffic-lights { display:flex; align-items:center; gap:0.42rem; }
+.kaizen-traffic-lights span { display:block; width:0.68rem; height:0.68rem; border-radius:999px; box-shadow:inset 0 0 0 1px oklch(0 0 0 / 0.08); }
+.kaizen-traffic-lights span:nth-child(1) { background:#ff6058; }
+.kaizen-traffic-lights span:nth-child(2) { background:#ffbd2e; }
+.kaizen-traffic-lights span:nth-child(3) { background:#28c840; }
+.kaizen-dock { border:1px solid color-mix(in oklch, var(--border) 75%, transparent); background:color-mix(in oklch, var(--card) 78%, transparent); box-shadow:0 14px 40px -18px oklch(0.12 0.02 260 / 0.34); backdrop-filter:blur(24px) saturate(1.35); }
+.kaizen-dock button { transition:transform 160ms ease, background-color 160ms ease, color 160ms ease; }
+.kaizen-dock button:hover { transform:translateY(-4px); }
+.kaizen-stat-card { border-color:color-mix(in oklch, var(--border) 75%, transparent) !important; background:color-mix(in oklch, var(--card) 82%, transparent) !important; box-shadow:0 8px 26px -20px oklch(0.12 0.02 260 / 0.35); backdrop-filter:blur(18px); }
+.kaizen-habit-card { border-color:color-mix(in oklch, var(--border) 75%, transparent) !important; background:color-mix(in oklch, var(--card) 86%, transparent) !important; box-shadow:0 8px 28px -22px oklch(0.12 0.02 260 / 0.3); }
+.kaizen-auth-window { border:1px solid color-mix(in oklch, var(--border) 78%, transparent); border-radius:1.5rem; background:color-mix(in oklch, var(--card) 88%, transparent); box-shadow:0 28px 90px -48px oklch(0.16 0.025 260 / 0.45); backdrop-filter:blur(28px) saturate(1.25); }
+@media (max-width:640px) { .kaizen-window { padding:0.75rem 0.85rem 1.5rem; border-radius:1.2rem; } .kaizen-titlebar { margin-bottom:0.8rem; } }
+
+/* Readability and refined desktop surfaces */
+.kaizen-desktop { min-height:100svh; padding-bottom:7rem; }
+.kaizen-window { margin-inline:auto; min-height:calc(100svh - 4rem); }
+.kaizen-stat-card { border-radius:1.35rem !important; background:color-mix(in oklch, var(--card) 94%, transparent) !important; }
+.kaizen-habit-card { border-radius:1.25rem !important; background:color-mix(in oklch, var(--card) 95%, transparent) !important; }
+.kaizen-dock { border-radius:1.35rem; padding:0.55rem; background:color-mix(in oklch, var(--card) 92%, transparent); box-shadow:0 18px 48px -22px oklch(0.12 0.02 260 / 0.32); }
+.kaizen-dock button { color:var(--foreground); font-weight:700; }
+.kaizen-dock button:hover { transform:translateY(-3px) scale(1.04); background:color-mix(in oklch, var(--primary) 12%, var(--card)); }
+button, input, textarea, select, label, p { font-weight:600; }
+h1,h2,h3,h4,h5,h6 { font-weight:700; letter-spacing:-0.015em; }
+@media (prefers-reduced-motion: reduce) { .kaizen-dock button { transition:none; } .kaizen-dock button:hover { transform:none; } }
+
+/* Section workspaces: each tool feels like its own focused macOS app. */
+.kaizen-page {
+  --page-accent: var(--primary);
+  min-height: 100svh;
+  padding: clamp(0.85rem, 2.8vw, 2rem) clamp(0.65rem, 2.5vw, 1.75rem) 7.5rem;
+  background:
+    radial-gradient(ellipse at 8% 8%, color-mix(in oklch, var(--page-accent) 13%, transparent), transparent 28rem),
+    radial-gradient(ellipse at 92% 90%, color-mix(in oklch, var(--page-accent) 8%, transparent), transparent 26rem),
+    var(--background);
+}
+.kaizen-page--dsa { --page-accent: oklch(0.67 0.16 255); }
+.kaizen-page--journal { --page-accent: oklch(0.68 0.15 325); }
+.kaizen-page--finance { --page-accent: oklch(0.68 0.15 155); }
+.kaizen-page--system-design { --page-accent: oklch(0.67 0.15 285); }
+.kaizen-page--notes { --page-accent: oklch(0.72 0.15 75); }
+.kaizen-page--workout { --page-accent: oklch(0.68 0.17 35); }
+.kaizen-page--planner { --page-accent: oklch(0.68 0.15 220); }
+.kaizen-page--time-audit { --page-accent: oklch(0.67 0.15 190); }
+.kaizen-page--learning { --page-accent: oklch(0.68 0.16 115); }
+.kaizen-page > * {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 1160px);
+  min-height: calc(100svh - 10rem) !important;
+  margin-inline: auto;
+  padding: clamp(1rem, 3vw, 2.25rem) !important;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklch, var(--border) 78%, transparent);
+  border-radius: 1.65rem;
+  background: color-mix(in oklch, var(--card) 91%, transparent) !important;
+  box-shadow: 0 28px 90px -52px oklch(0.12 0.02 260 / 0.32), 0 2px 12px oklch(0.12 0.02 260 / 0.035);
+  backdrop-filter: blur(28px) saturate(1.2);
+}
+.kaizen-page > *::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -8rem;
+  right: -7rem;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in oklch, var(--page-accent) 13%, transparent), transparent 70%);
+  pointer-events: none;
+}
+.kaizen-page header {
+  border-color: color-mix(in oklch, var(--page-accent) 20%, var(--border)) !important;
+}
+.kaizen-page h1 {
+  font-weight: 700 !important;
+  letter-spacing: -0.025em;
+}
+.kaizen-page h2, .kaizen-page h3 {
+  font-weight: 700 !important;
+}
+.kaizen-page [class*="rounded-2xl"][class*="border"],
+.kaizen-page [class*="rounded-xl"][class*="border"] {
+  border-color: color-mix(in oklch, var(--border) 82%, transparent);
+}
+.kaizen-page button {
+  font-weight: 700;
+}
+.kaizen-page button:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--page-accent) 75%, white);
+  outline-offset: 2px;
+}
+.kaizen-page [class*="bg-card"] {
+  background-color: color-mix(in oklch, var(--card) 94%, transparent);
+}
+@media (max-width: 640px) {
+  .kaizen-page { padding: 0.6rem 0.5rem 7rem; }
+  .kaizen-page > * { min-height: calc(100svh - 8rem) !important; padding: 1rem !important; border-radius: 1.2rem; }
+}
+
+/* Learning checklist — dedicated study workspace */
+.learning-page {
+  --learning-accent: var(--primary);
+  background:
+    radial-gradient(ellipse at 8% 0%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 34rem),
+    radial-gradient(ellipse at 100% 70%, color-mix(in oklch, oklch(0.72 0.13 185) 9%, transparent), transparent 30rem),
+    var(--background);
+}
+.learning-shell { animation: learning-enter 380ms ease-out both; }
+@keyframes learning-enter { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.learning-hero {
+  background: linear-gradient(118deg, color-mix(in oklch, var(--card) 96%, transparent), color-mix(in oklch, var(--primary) 7%, var(--card)));
+  box-shadow: 0 22px 60px -42px oklch(0.12 0.02 260 / 0.32);
+}
+.learning-hero-orb { position:absolute; border-radius:999px; pointer-events:none; filter:blur(1px); }
+.learning-hero-orb--one { width:19rem; height:19rem; right:8%; top:-13rem; background:radial-gradient(circle,color-mix(in oklch,var(--primary) 16%,transparent),transparent 70%); }
+.learning-hero-orb--two { width:14rem; height:14rem; right:26%; bottom:-12rem; background:radial-gradient(circle,color-mix(in oklch,oklch(0.72 0.13 185) 12%,transparent),transparent 70%); }
+.learning-progress-orbit { box-shadow:0 12px 36px -22px color-mix(in oklch,var(--primary) 55%,transparent); }
+.learning-metric {
+  display:flex; align-items:center; gap:0.9rem; min-height:6.1rem; padding:1rem 1.15rem;
+  border:1px solid color-mix(in oklch,var(--border) 78%,transparent); border-radius:1.2rem;
+  background:color-mix(in oklch,var(--card) 88%,transparent); box-shadow:0 10px 28px -24px oklch(0.12 0.02 260 / 0.35);
+}
+.learning-metric-icon { display:grid; width:2.6rem; height:2.6rem; place-items:center; border-radius:0.9rem; color:var(--primary); background:color-mix(in oklch,var(--primary) 12%,transparent); }
+.learning-metric-icon--green { color:oklch(0.61 0.14 155); background:color-mix(in oklch,oklch(0.68 0.15 155) 14%,transparent); }
+.learning-metric-icon--amber { color:oklch(0.68 0.14 75); background:color-mix(in oklch,oklch(0.75 0.14 75) 17%,transparent); }
+.learning-track-panel { padding:0.85rem; border:1px solid color-mix(in oklch,var(--border) 78%,transparent); border-radius:1.4rem; background:color-mix(in oklch,var(--card) 72%,transparent); box-shadow:0 16px 42px -34px oklch(0.12 0.02 260 / 0.32); }
+.learning-track-option { display:flex; align-items:center; gap:0.7rem; padding:0.7rem; border:1px solid transparent; border-radius:0.95rem; text-align:left; transition:background 160ms ease,border-color 160ms ease,transform 160ms ease; }
+.learning-track-option:hover { background:color-mix(in oklch,var(--muted) 55%,transparent); transform:translateX(2px); }
+.learning-track-option.is-active { border-color:color-mix(in oklch,var(--primary) 24%,var(--border)); background:color-mix(in oklch,var(--primary) 9%,var(--card)); box-shadow:inset 3px 0 0 var(--primary); }
+.learning-track-symbol { display:grid; width:2.25rem; height:2.25rem; flex:none; place-items:center; border-radius:0.75rem; color:var(--primary); background:color-mix(in oklch,var(--primary) 12%,transparent); }
+.learning-track-symbol--0 { color:oklch(0.64 0.14 250); background:color-mix(in oklch,oklch(0.65 0.14 250) 14%,transparent); }
+.learning-track-symbol--1 { color:oklch(0.64 0.14 320); background:color-mix(in oklch,oklch(0.65 0.14 320) 14%,transparent); }
+.learning-track-symbol--2 { color:oklch(0.62 0.14 155); background:color-mix(in oklch,oklch(0.65 0.14 155) 14%,transparent); }
+.learning-track-symbol--3 { color:oklch(0.68 0.14 75); background:color-mix(in oklch,oklch(0.72 0.14 75) 16%,transparent); }
+.learning-track-bar { display:block; height:4px; margin-top:0.45rem; overflow:hidden; border-radius:99px; background:var(--muted); }
+.learning-track-bar > span { display:block; height:100%; border-radius:inherit; background:var(--primary); transition:width 350ms ease; }
+.learning-task-panel { overflow:hidden; border:1px solid color-mix(in oklch,var(--border) 80%,transparent); border-radius:1.4rem; background:color-mix(in oklch,var(--card) 86%,transparent); box-shadow:0 18px 48px -38px oklch(0.12 0.02 260 / 0.35); backdrop-filter:blur(24px); }
+.learning-task-group + .learning-task-group { border-top:1px solid color-mix(in oklch,var(--border) 68%,transparent); }
+.learning-group-dot { width:0.55rem; height:0.55rem; border-radius:50%; background:var(--primary); box-shadow:0 0 0 4px color-mix(in oklch,var(--primary) 12%,transparent); }
+.learning-group-dot--0 { background:oklch(0.65 0.14 250); }
+.learning-group-dot--1 { background:oklch(0.65 0.14 320); }
+.learning-group-dot--2 { background:oklch(0.65 0.14 155); }
+.learning-group-dot--3 { background:oklch(0.72 0.14 75); }
+.learning-group-dot--4 { background:oklch(0.67 0.15 35); }
+.learning-task-row { display:flex; align-items:flex-start; gap:0.75rem; padding:0.85rem 0.8rem; border:1px solid color-mix(in oklch,var(--border) 68%,transparent); border-radius:0.95rem; background:color-mix(in oklch,var(--background) 56%,transparent); transition:background 160ms ease,border-color 160ms ease,transform 160ms ease; }
+.learning-task-row:hover { border-color:color-mix(in oklch,var(--primary) 24%,var(--border)); background:color-mix(in oklch,var(--primary) 4%,var(--card)); transform:translateY(-1px); }
+.learning-task-row.is-complete { background:color-mix(in oklch,var(--muted) 45%,transparent); }
+.learning-task-row.is-complete > button:nth-child(2) > span:first-child { color:var(--muted-foreground); text-decoration:line-through; text-decoration-thickness:1.5px; }
+.learning-task-check { display:grid; width:1.7rem; height:1.7rem; flex:none; place-items:center; margin-top:-0.1rem; border-radius:0.6rem; color:var(--muted-foreground); transition:color 160ms ease,background 160ms ease; }
+.learning-task-check:hover { color:var(--primary); background:color-mix(in oklch,var(--primary) 10%,transparent); }
+.learning-task-row.is-complete .learning-task-check { color:oklch(0.62 0.14 155); }
+.learning-page button, .learning-page input, .learning-page select { font-weight:700; }
+.learning-page h1,.learning-page h2,.learning-page h3 { font-weight:700; letter-spacing:-0.02em; }
+@media (max-width:1023px) { .learning-track-panel { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0.35rem; } .learning-track-panel > div:first-child { grid-column:1/-1; } }
+@media (max-width:560px) { .learning-track-panel { grid-template-columns:1fr; } .learning-hero { border-radius:1.35rem; } .learning-task-panel { border-radius:1.2rem; } .learning-task-row { gap:0.55rem; padding:0.75rem 0.55rem; } }
+@media (prefers-reduced-motion:reduce) { .learning-shell { animation:none; } .learning-track-option,.learning-task-row { transition:none; } }
+
+/* Dark mode: keep the learning workspace calm and nearly monochrome.
+   Light mode intentionally keeps its existing warmer accent palette. */
+.dark .learning-page {
+  --primary: oklch(0.79 0.012 250);
+  background:
+    radial-gradient(ellipse at 8% 0%, oklch(0.78 0.012 250 / 0.045), transparent 34rem),
+    var(--background);
+}
+.dark .learning-hero {
+  background: linear-gradient(118deg, color-mix(in oklch, var(--card) 97%, transparent), color-mix(in oklch, white 2.5%, var(--card)));
+  box-shadow: 0 22px 60px -42px oklch(0 0 0 / 0.55);
+}
+.dark .learning-hero-orb--one,
+.dark .learning-hero-orb--two {
+  background: radial-gradient(circle, oklch(0.8 0.008 250 / 0.055), transparent 70%);
+}
+.dark .learning-progress-orbit {
+  box-shadow: 0 12px 36px -22px oklch(0 0 0 / 0.65);
+}
+.dark .learning-metric,
+.dark .learning-track-panel,
+.dark .learning-task-panel {
+  border-color: oklch(1 0 0 / 0.085);
+  background: color-mix(in oklch, var(--card) 94%, transparent);
+  box-shadow: 0 16px 42px -34px oklch(0 0 0 / 0.6);
+}
+.dark .learning-metric-icon,
+.dark .learning-metric-icon--green,
+.dark .learning-metric-icon--amber {
+  color: oklch(0.78 0.008 250);
+  background: oklch(1 0 0 / 0.065);
+}
+.dark .learning-track-option.is-active {
+  border-color: oklch(1 0 0 / 0.12);
+  background: oklch(1 0 0 / 0.055);
+  box-shadow: inset 2px 0 0 oklch(0.78 0.008 250 / 0.72);
+}
+.dark .learning-track-symbol,
+.dark .learning-track-symbol--0,
+.dark .learning-track-symbol--1,
+.dark .learning-track-symbol--2,
+.dark .learning-track-symbol--3 {
+  color: oklch(0.76 0.008 250);
+  background: oklch(1 0 0 / 0.065);
+}
+.dark .learning-track-bar > span {
+  background: oklch(0.72 0.008 250);
+}
+.dark .learning-group-dot,
+.dark .learning-group-dot--0,
+.dark .learning-group-dot--1,
+.dark .learning-group-dot--2,
+.dark .learning-group-dot--3,
+.dark .learning-group-dot--4 {
+  background: oklch(0.68 0.008 250);
+  box-shadow: 0 0 0 4px oklch(1 0 0 / 0.045);
+}
+.dark .learning-task-row {
+  border-color: oklch(1 0 0 / 0.075);
+  background: oklch(1 0 0 / 0.018);
+}
+.dark .learning-task-row:hover {
+  border-color: oklch(1 0 0 / 0.14);
+  background: oklch(1 0 0 / 0.045);
+}
+.dark .learning-task-row.is-complete {
+  background: oklch(1 0 0 / 0.035);
+}
+.dark .learning-task-row.is-complete .learning-task-check {
+  color: oklch(0.72 0.008 250);
+}
+.dark .learning-task-check:hover {
+  color: var(--foreground);
+  background: oklch(1 0 0 / 0.07);
+}
+.dark .learning-page .text-primary {
+  color: oklch(0.82 0.008 250);
+}
+.dark .learning-page .bg-primary\/10 {
+  background: oklch(1 0 0 / 0.065);
+}
+.dark .learning-page .border-primary\/20 {
+  border-color: oklch(1 0 0 / 0.11);
+}
+
+/* Task planner workspace */
+.planner-page {
+  background:
+    radial-gradient(ellipse at 12% 0%, color-mix(in oklch, var(--foreground) 2.5%, transparent), transparent 34rem),
+    var(--background);
+}
+.planner-shell { max-width: 1180px; }
+.planner-welcome {
+  background: linear-gradient(115deg, color-mix(in oklch, var(--card) 97%, transparent), color-mix(in oklch, var(--muted) 28%, var(--card)));
+  box-shadow: 0 18px 48px -40px oklch(0.12 0.02 260 / 0.28);
+}
+.planner-stat {
+  background: color-mix(in oklch, var(--card) 92%, transparent);
+  box-shadow: 0 12px 34px -30px oklch(0.12 0.02 260 / 0.28);
+}
+.planner-surface {
+  border-radius: 1.45rem !important;
+  background: color-mix(in oklch, var(--card) 91%, transparent) !important;
+  box-shadow: 0 22px 60px -46px oklch(0.12 0.02 260 / 0.32) !important;
+  backdrop-filter: blur(24px);
+}
+.planner-page h1,.planner-page h2,.planner-page h3 { font-weight: 700; letter-spacing: -0.02em; }
+.planner-page p,.planner-page button,.planner-page label { font-weight: 600; }
+.planner-page .planner-view-switch button { min-height: 2.35rem; }
+.planner-page .planner-view-switch button:focus-visible,
+.planner-page button:focus-visible { outline-offset: 2px; }
+.planner-page [class*="border-border/40"] { border-color: color-mix(in oklch, var(--border) 75%, transparent); }
+.planner-page [class*="bg-primary text-primary-foreground"] {
+  background: var(--muted);
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--border) 75%, transparent);
+}
+.planner-page [class*="ring-primary"] { --tw-ring-color: color-mix(in oklch, var(--foreground) 25%, transparent); }
+.planner-page [class*="border-primary"] { border-color: color-mix(in oklch, var(--foreground) 24%, var(--border)); }
+.planner-page [class*="text-primary"] { color: var(--foreground); }
+.planner-page [class*="bg-primary/"] { background-color: color-mix(in oklch, var(--foreground) 7%, transparent); }
+.dark .planner-page {
+  background:
+    radial-gradient(ellipse at 12% 0%, oklch(1 0 0 / 0.025), transparent 34rem),
+    var(--background);
+}
+.dark .planner-welcome,
+.dark .planner-stat,
+.dark .planner-surface {
+  border-color: oklch(1 0 0 / 0.085) !important;
+  background: color-mix(in oklch, var(--card) 96%, transparent) !important;
+  box-shadow: 0 22px 60px -46px oklch(0 0 0 / 0.65) !important;
+}
+.dark .planner-page [class*="bg-primary/"] { background-color: oklch(1 0 0 / 0.065); }
+.dark .planner-page [class*="text-primary"] { color: oklch(0.82 0.008 250); }
+.dark .planner-page [class*="border-primary"] { border-color: oklch(1 0 0 / 0.14); }
+.dark .planner-page [class*="bg-primary text-primary-foreground"] {
+  background: oklch(1 0 0 / 0.09);
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.11);
+}
+.dark .planner-page .planner-view-switch {
+  border-color: oklch(1 0 0 / 0.09);
+  background: oklch(1 0 0 / 0.035);
+}
+@media (max-width: 640px) {
+  .planner-page { padding: 1rem 0.65rem 6.5rem; }
+  .planner-surface { border-radius: 1.15rem !important; }
+}
+
+
+/* Light theme: align Task Planner with the Learning Space palette and surfaces. */
+.planner-page:not(.dark) {
+  background:
+    radial-gradient(ellipse at 8% 0%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 34rem),
+    radial-gradient(ellipse at 100% 70%, color-mix(in oklch, oklch(0.72 0.13 185) 9%, transparent), transparent 30rem),
+    var(--background);
+}
+.planner-page:not(.dark) .planner-welcome {
+  background: linear-gradient(118deg, color-mix(in oklch, var(--card) 96%, transparent), color-mix(in oklch, var(--primary) 7%, var(--card)));
+  box-shadow: 0 22px 60px -42px oklch(0.12 0.02 260 / 0.32);
+}
+.planner-page:not(.dark) .planner-stat {
+  border-color: color-mix(in oklch, var(--border) 78%, transparent);
+  background: color-mix(in oklch, var(--card) 88%, transparent);
+  box-shadow: 0 10px 28px -24px oklch(0.12 0.02 260 / 0.35);
+}
+.planner-page:not(.dark) .planner-surface {
+  border-color: color-mix(in oklch, var(--border) 80%, transparent) !important;
+  background: color-mix(in oklch, var(--card) 86%, transparent) !important;
+  box-shadow: 0 18px 48px -38px oklch(0.12 0.02 260 / 0.35) !important;
+}
+.planner-page:not(.dark) [class*="bg-primary text-primary-foreground"] {
+  background: color-mix(in oklch, var(--primary) 9%, var(--card));
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 24%, var(--border));
+}
+.planner-page:not(.dark) [class*="ring-primary"] {
+  --tw-ring-color: color-mix(in oklch, var(--primary) 42%, transparent);
+}
+.planner-page:not(.dark) [class*="border-primary"] {
+  border-color: color-mix(in oklch, var(--primary) 32%, var(--border));
+}
+.planner-page:not(.dark) [class*="text-primary"] { color: var(--primary); }
+.planner-page:not(.dark) [class*="bg-primary/"] {
+  background-color: color-mix(in oklch, var(--primary) 12%, transparent);
+}
+
+
+/* DSA problem-solving workspace */
+.dsa-workspace { max-width: 1120px !important; }
+.dsa-workspace .dsa-header { border-color: color-mix(in oklch,var(--border) 80%,transparent); }
+.dsa-workspace .dsa-progress {
+  min-width: 220px;
+  border-color: color-mix(in oklch,var(--border) 78%,transparent);
+  background: color-mix(in oklch,var(--card) 88%,transparent);
+  box-shadow: 0 12px 32px -26px oklch(0.12 0.02 260 / .3);
+}
+.dsa-workspace .dsa-tabs {
+  border: 1px solid color-mix(in oklch,var(--border) 76%,transparent);
+  background: color-mix(in oklch,var(--muted) 58%,transparent);
+  gap: .2rem;
+}
+.dsa-workspace .dsa-tab { min-height: 2.5rem; border: 1px solid transparent; }
+.dsa-workspace .dsa-tab[data-state="active"] {
+  border-color: color-mix(in oklch,var(--border) 85%,transparent);
+  background: color-mix(in oklch,var(--card) 96%,transparent);
+  box-shadow: 0 2px 8px oklch(0.12 0.02 260 / .08);
+}
+.dsa-workspace .dsa-problem {
+  border: 1px solid color-mix(in oklch,var(--border) 78%,transparent);
+  border-left-width: 3px;
+  border-radius: 1rem;
+  background: color-mix(in oklch,var(--card) 90%,transparent);
+  box-shadow: 0 8px 24px -22px oklch(0.12 0.02 260 / .3);
+}
+.dsa-workspace .dsa-problem:hover {
+  border-color: color-mix(in oklch,var(--primary) 24%,var(--border));
+  background: color-mix(in oklch,var(--card) 98%,transparent);
+  transform: translateY(-1px);
+}
+.dsa-workspace .dsa-problem label { font-size: .925rem; font-weight: 700; line-height: 1.4; }
+.dsa-workspace .dsa-problem [data-state="checked"] { background: var(--foreground); border-color: var(--foreground); }
+.dsa-workspace .dsa-problem .bg-emerald-500\/10,
+.dsa-workspace .dsa-problem .bg-amber-500\/10,
+.dsa-workspace .dsa-problem .bg-rose-500\/10 {
+  background: color-mix(in oklch,var(--muted) 70%,transparent);
+  border-color: color-mix(in oklch,var(--border) 85%,transparent);
+  color: var(--muted-foreground);
+}
+.dsa-workspace .dsa-problem .border-l-emerald-500,
+.dsa-workspace .dsa-problem .border-l-amber-500,
+.dsa-workspace .dsa-problem .border-l-rose-500 { border-left-color: color-mix(in oklch,var(--foreground) 22%,var(--border)); }
+.dark .dsa-workspace .dsa-progress,
+.dark .dsa-workspace .dsa-problem {
+  border-color: oklch(1 0 0 / .085);
+  background: color-mix(in oklch,var(--card) 96%,transparent);
+  box-shadow: 0 12px 32px -28px oklch(0 0 0 / .65);
+}
+.dark .dsa-workspace .dsa-problem .bg-emerald-500\/10,
+.dark .dsa-workspace .dsa-problem .bg-amber-500\/10,
+.dark .dsa-workspace .dsa-problem .bg-rose-500\/10 {
+  background: oklch(1 0 0 / .055);
+  color: var(--muted-foreground);
+}
+.dark .dsa-workspace .dsa-problem .border-l-emerald-500,
+.dark .dsa-workspace .dsa-problem .border-l-amber-500,
+.dark .dsa-workspace .dsa-problem .border-l-rose-500 { border-left-color: oklch(1 0 0 / .2); }
+
+/* Active dock destination: quiet macOS-style selected tile and indicator. */
+.kaizen-dock button.is-active {
+  position: relative;
+  color: var(--foreground);
+  background: color-mix(in oklch,var(--foreground) 10%,var(--card));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch,var(--foreground) 13%,transparent), 0 3px 10px oklch(0 0 0 / .07);
+}
+.kaizen-dock button.is-active::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .75;
+  transform: translateX(-50%);
+}
+.dark .kaizen-dock button.is-active {
+  background: oklch(1 0 0 / .13);
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / .13), 0 3px 12px oklch(0 0 0 / .24);
+}
+
+
+/* Wider, less constrained workspaces across the app. */
+.kaizen-window { max-width: 1440px !important; }
+.kaizen-page > * { width: min(100%, 1440px); }
+.planner-shell { max-width: 1440px !important; }
+.dsa-workspace { max-width: 1440px !important; }
+@media (min-width: 1280px) {
+  .kaizen-page { padding-left: clamp(1.5rem, 3vw, 3.5rem); padding-right: clamp(1.5rem, 3vw, 3.5rem); }
+}
+
+/* =========================================================
+   KAIZEN macOS COLOUR SYSTEM
+   Cool system neutrals with Apple's restrained system blue.
+   ========================================================= */
+:root {
+  --background: oklch(0.965 0.004 255);
+  --foreground: oklch(0.20 0.012 255);
+  --card: oklch(0.995 0.002 255);
+  --card-foreground: oklch(0.20 0.012 255);
+  --popover: oklch(0.995 0.002 255);
+  --popover-foreground: oklch(0.20 0.012 255);
+  --primary: oklch(0.59 0.19 255);
+  --primary-foreground: oklch(0.99 0.002 255);
+  --secondary: oklch(0.925 0.006 255);
+  --secondary-foreground: oklch(0.25 0.012 255);
+  --muted: oklch(0.935 0.005 255);
+  --muted-foreground: oklch(0.48 0.012 255);
+  --accent: oklch(0.925 0.025 255);
+  --accent-foreground: oklch(0.38 0.13 255);
+  --border: oklch(0.86 0.008 255);
+  --input: oklch(0.86 0.008 255);
+  --ring: oklch(0.59 0.19 255);
+  --chart-1: oklch(0.59 0.19 255);
+  --chart-2: oklch(0.53 0.035 255);
+  --chart-3: oklch(0.68 0.025 255);
+  --chart-4: oklch(0.43 0.025 255);
+  --chart-5: oklch(0.77 0.018 255);
+  --sidebar: oklch(0.95 0.004 255);
+  --sidebar-foreground: oklch(0.22 0.012 255);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+.dark {
+  --background: oklch(0.155 0.006 255);
+  --foreground: oklch(0.94 0.004 255);
+  --card: oklch(0.205 0.006 255);
+  --card-foreground: oklch(0.94 0.004 255);
+  --popover: oklch(0.205 0.006 255);
+  --popover-foreground: oklch(0.94 0.004 255);
+  --primary: oklch(0.68 0.17 255);
+  --primary-foreground: oklch(0.12 0.008 255);
+  --secondary: oklch(0.255 0.006 255);
+  --secondary-foreground: oklch(0.92 0.004 255);
+  --muted: oklch(0.255 0.006 255);
+  --muted-foreground: oklch(0.69 0.008 255);
+  --accent: oklch(0.29 0.025 255);
+  --accent-foreground: oklch(0.82 0.09 255);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 13%);
+  --ring: oklch(0.68 0.17 255);
+  --chart-1: oklch(0.68 0.17 255);
+  --chart-2: oklch(0.72 0.012 255);
+  --chart-3: oklch(0.56 0.012 255);
+  --chart-4: oklch(0.82 0.008 255);
+  --chart-5: oklch(0.45 0.01 255);
+  --sidebar: oklch(0.18 0.006 255);
+  --sidebar-foreground: oklch(0.92 0.004 255);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+/* A single system-blue accent is shared by every workspace. */
+.kaizen-page,
+.kaizen-page--dsa,
+.kaizen-page--journal,
+.kaizen-page--finance,
+.kaizen-page--system-design,
+.kaizen-page--notes,
+.kaizen-page--workout,
+.kaizen-page--planner,
+.kaizen-page--time-audit,
+.kaizen-page--learning {
+  --page-accent: var(--primary);
+  color: var(--foreground);
+}
+
+.learning-page,
+.planner-page { color: var(--foreground); }
+
+.learning-metric-icon--green,
+.learning-metric-icon--amber,
+.learning-track-symbol--0,
+.learning-track-symbol--1,
+.learning-track-symbol--2,
+.learning-track-symbol--3,
+.learning-group-dot--0,
+.learning-group-dot--1,
+.learning-group-dot--2,
+.learning-group-dot--3,
+.learning-group-dot--4 {
+  color: var(--primary);
+  background: color-mix(in oklch, var(--primary) 10%, transparent);
+}
+.learning-group-dot--0,
+.learning-group-dot--1,
+.learning-group-dot--2,
+.learning-group-dot--3,
+.learning-group-dot--4 {
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 8%, transparent);
+}
+.learning-task-row.is-complete .learning-task-check { color: var(--primary); }
+
+.dark .learning-page {
+  --primary: oklch(0.68 0.17 255);
+  background:
+    radial-gradient(ellipse at 8% 0%, color-mix(in oklch, var(--primary) 5%, transparent), transparent 34rem),
+    var(--background);
+}
+.dark .learning-metric-icon--green,
+.dark .learning-metric-icon--amber,
+.dark .learning-track-symbol--0,
+.dark .learning-track-symbol--1,
+.dark .learning-track-symbol--2,
+.dark .learning-track-symbol--3,
+.dark .learning-group-dot--0,
+.dark .learning-group-dot--1,
+.dark .learning-group-dot--2,
+.dark .learning-group-dot--3,
+.dark .learning-group-dot--4 {
+  color: var(--primary);
+  background: oklch(1 0 0 / 0.065);
+}
+.dark .learning-task-row.is-complete .learning-task-check { color: var(--primary); }
+
+/* macOS-style translucent chrome and quiet selected states. */
+.kaizen-dock,
+.kaizen-auth-window {
+  backdrop-filter: blur(28px) saturate(1.35);
+}
+.kaizen-dock button.is-active {
+  color: var(--primary);
+  background: color-mix(in oklch, var(--primary) 10%, var(--card));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 15%, transparent);
+}
+.kaizen-dock button.is-active::after { background: var(--primary); }
+.dark .kaizen-dock button.is-active {
+  color: oklch(0.74 0.14 255);
+  background: oklch(0.68 0.17 255 / 0.14);
+  box-shadow: inset 0 0 0 1px oklch(0.68 0.17 255 / 0.2);
+}
+
+/* Mobile workspaces should feel native and edge-to-edge, not like
+   a desktop window shrunk onto a phone screen. Keep the floating
+   macOS window treatment for larger screens only. */
+@media (max-width: 640px) {
+  .kaizen-page {
+    min-height: 100svh;
+    padding: 0.25rem 0 7rem !important;
+    background: var(--background) !important;
+  }
+
+  .kaizen-page > * {
+    width: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 1rem 1rem 1.5rem !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .kaizen-page > *::before {
+    display: none !important;
+  }
+
+  .kaizen-page header {
+    border-radius: 0 !important;
+  }
+}
+
+/* Shared dashboard-style workspace layout:
+   all tool pages use the same open canvas and content rhythm as Dashboard.
+   Individual cards remain responsible for their own surfaces. */
+.kaizen-page {
+  width: 100%;
+  min-height: 100svh;
+  padding: 1.5rem 1rem 7.5rem !important;
+  background: var(--background) !important;
+}
+
+.kaizen-page > * {
+  width: min(100%, 1440px) !important;
+  min-height: 0 !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.kaizen-page > *::before {
+  display: none !important;
+}
+
+/* Match the dashboard's comfortable section spacing and card language. */
+.kaizen-page section {
+  scroll-margin-top: 1.5rem;
+}
+
+.kaizen-page [class*="rounded-2xl"][class*="border"],
+.kaizen-page [class*="rounded-xl"][class*="border"] {
+  border-color: color-mix(in oklch, var(--border) 82%, transparent);
+}
+
+@media (max-width: 640px) {
+  .kaizen-page {
+    padding: 1rem 0.75rem 7rem !important;
+  }
+  .kaizen-page > * {
+    width: 100% !important;
+  }
+}
+

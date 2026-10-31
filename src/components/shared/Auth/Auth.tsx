@@ -101,8 +101,8 @@ export function Auth() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-100 border-border/50 shadow-lg">
+    <div className="kaizen-desktop flex min-h-screen items-center justify-center p-4">
+      <Card className="kaizen-auth-window w-full max-w-100 overflow-hidden border-border/50 shadow-2xl">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">
             Welcome to Kaizen

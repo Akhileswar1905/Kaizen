@@ -65,9 +65,6 @@ interface FolderRow {
   name: string
 }
 
-interface NotesTrackerProps {
-  onBack: () => void
-}
 
 // Each tag gets a stable colour derived from its name, so "Study" is always
 // the same hue wherever it appears.
@@ -205,7 +202,7 @@ function NameForm({ kind, existing, onSubmit, onClose }: NameFormProps) {
   )
 }
 
-export function NotesTracker({ onBack }: NotesTrackerProps) {
+export function NotesTracker() {
   const { user } = useAuth()
   const { triggerGamificationEvent, subtractGamificationPoints } =
     useGamification()
@@ -219,9 +216,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
   // Core Application Workspace State
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)
   const [isEditing, setIsEditing] = useState(false)
-  const [workspaceMode, setWorkspaceMode] = useState<"edit" | "preview">(
-    "preview"
-  )
 
   // Mobile view state for switching between list and editor on small screens
   const [mobileView, setMobileView] = useState<"list" | "editor">("list")
@@ -256,32 +250,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     checkExistingDraft()
   }, [user])
 
-  // Auto-Save Draft Logic
-  useEffect(() => {
-    if (workspaceMode === "edit" && (title.trim() || content.trim())) {
-      const timer = setTimeout(() => {
-        const draftData = {
-          title,
-          content,
-          tag: selectedTag,
-          folderId: selectedFolderId,
-          noteId: selectedNote?.id || null,
-          timestamp: new Date().toISOString(),
-        }
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData))
-        setDraftSavedAt(new Date())
-      }, 1500)
-      return () => clearTimeout(timer)
-    }
-  }, [
-    title,
-    content,
-    selectedTag,
-    selectedFolderId,
-    workspaceMode,
-    selectedNote,
-  ])
-
   const checkExistingDraft = () => {
     const savedDraft = localStorage.getItem(DRAFT_KEY)
     if (savedDraft) setHasAvailableDraft(true)
@@ -296,12 +264,29 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
       setSelectedTag(draft.tag)
       setSelectedFolderId(draft.folderId)
       setIsEditing(true)
-      setWorkspaceMode("edit")
       setSelectedNote(notes.find((n) => n.id === draft.noteId) || null)
       setHasAvailableDraft(false)
       setMobileView("editor")
     }
   }, [notes])
+
+  const saveDraft = () => {
+    if (!title.trim() && !content.trim()) return
+
+    const savedAt = new Date()
+    const draftData = {
+      title,
+      content,
+      tag: selectedTag,
+      folderId: selectedFolderId,
+      noteId: selectedNote?.id || null,
+      timestamp: savedAt.toISOString(),
+    }
+
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData))
+    setDraftSavedAt(savedAt)
+    setHasAvailableDraft(true)
+  }
 
   const clearDraft = () => {
     localStorage.removeItem(DRAFT_KEY)
@@ -385,7 +370,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     setContent(note.content)
     setSelectedTag(note.tag ?? "General")
     setSelectedFolderId(note.folder_id || null)
-    setWorkspaceMode("preview")
     setMobileView("editor")
   }
 
@@ -396,7 +380,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
     setContent("")
     setSelectedTag(categories.length > 0 ? categories[0].name : "General")
     setSelectedFolderId(activeFilterFolder)
-    setWorkspaceMode("edit")
     setMobileView("editor")
   }
 
@@ -440,7 +423,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
 
     clearDraft()
     setIsEditing(false)
-    setWorkspaceMode("preview")
     setIsSubmitting(false)
   }
 
@@ -517,19 +499,10 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
 
   return (
     <div className="flex min-h-dvh justify-center bg-background/50 px-3 py-3 font-sans text-foreground antialiased sm:px-6 sm:py-5 md:px-10 md:py-7">
-      <div className="flex w-full max-w-6xl animate-in flex-col gap-4 duration-500 fade-in slide-in-from-bottom-4 sm:gap-5">
+      <div className="flex w-full max-w-[1440px] animate-in flex-col gap-4 duration-500 fade-in slide-in-from-bottom-4 sm:gap-5">
         {/* Header */}
         <header className="flex shrink-0 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onBack}
-              aria-label="Back to dashboard"
-              className="h-9 w-9 shrink-0 rounded-full hover:bg-accent hover:text-accent-foreground sm:h-10 sm:w-10"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
             <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
               <PenTool className="h-5 w-5" />
             </div>
@@ -824,7 +797,6 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                             size="sm"
                             onClick={() => {
                               setIsEditing(true)
-                              setWorkspaceMode("edit")
                             }}
                             className="gap-1.5 text-xs font-semibold"
                           >
@@ -857,21 +829,35 @@ export function NotesTracker({ onBack }: NotesTrackerProps) {
                       )}
 
                       {isEditing && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={handleSaveNote}
-                          disabled={
-                            isSubmitting || (!title.trim() && !content.trim())
-                          }
-                          className="gap-1.5 font-semibold shadow-sm"
-                        >
-                          {isSubmitting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            "Done"
-                          )}
-                        </Button>
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={saveDraft}
+                            disabled={!title.trim() && !content.trim()}
+                            className="gap-1.5 text-xs font-semibold"
+                          >
+                            <SaveAll className="h-3.5 w-3.5" />
+                            Save as draft
+                          </Button>
+                          <Button
+                            type="submit"
+                            form="note-form"
+                            variant="default"
+                            size="sm"
+                            disabled={
+                              isSubmitting || (!title.trim() && !content.trim())
+                            }
+                            className="gap-1.5 font-semibold shadow-sm"
+                          >
+                            {isSubmitting ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Done"
+                            )}
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
