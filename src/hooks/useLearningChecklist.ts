@@ -3,6 +3,8 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
 import { LEARNING_CHECKLIST_SEED } from "@/lib/learningChecklistSeed"
 
+export type LearningChecklistSubtask = { id: string; title: string; is_completed: boolean }
+
 export type LearningChecklistItem = {
   id: string
   user_id: string
@@ -11,10 +13,11 @@ export type LearningChecklistItem = {
   description: string
   is_completed: boolean
   sort_order: number
+  subtasks: LearningChecklistSubtask[]
 }
 export type NewLearningChecklistItem = { category: string; title: string; description?: string; is_completed?: boolean; sort_order?: number }
 type NewItem = NewLearningChecklistItem
-type Updates = Partial<Pick<LearningChecklistItem, "category" | "title" | "description" | "is_completed" | "sort_order">>
+type Updates = Partial<Pick<LearningChecklistItem, "category" | "title" | "description" | "is_completed" | "sort_order" | "subtasks">>
 const SEEDED_KEY = "kaizen-learning-checklist-seeded-v1"
 
 export function useLearningChecklist() {
@@ -33,7 +36,7 @@ export function useLearningChecklist() {
       const payload = LEARNING_CHECKLIST_SEED.map((item, index) => ({
         user_id: user.id, category: item.category, title: item.title,
         description: item.description ?? "", is_completed: item.is_completed ?? false,
-        sort_order: item.sort_order ?? index,
+        sort_order: item.sort_order ?? index, subtasks: [],
       }))
       const { data: seeded, error: seedError } = await supabase.from("learning_checklist_items").insert(payload).select("*")
       if (seedError) { setErrorMessage(seedError.message); setIsLoading(false); return }
@@ -46,7 +49,7 @@ export function useLearningChecklist() {
 
   const createItem = async (input: NewItem) => {
     if (!user?.id) return { error: "Sign in to edit your checklist." }
-    const { data, error } = await supabase.from("learning_checklist_items").insert([{ user_id: user.id, ...input }]).select("*").single()
+    const { data, error } = await supabase.from("learning_checklist_items").insert([{ user_id: user.id, subtasks: [], ...input }]).select("*").single()
     if (error) return { error: error.message }
     setItems(prev => [...prev, data as LearningChecklistItem]); return { error: null }
   }
