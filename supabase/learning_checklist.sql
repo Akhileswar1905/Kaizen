@@ -26,3 +26,9 @@ create policy "Users manage their own learning checklist items"
   for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+
+-- Store subtasks as JSON on each learning checklist item.
+-- Existing items are preserved and receive an empty subtask list.
+alter table public.learning_checklist_items
+  add column if not exists subtasks jsonb not null default '[]'::jsonb;
