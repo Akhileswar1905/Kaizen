@@ -187,7 +187,7 @@ export function PlannerView() {
         )}
       >
         {/* Header Section */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <header className="kaizen-page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">PERSONAL WORKSPACE</p>
