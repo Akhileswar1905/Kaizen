@@ -10,7 +10,7 @@ export function FinanceView({ initialTab = "expenses" }: { initialTab?: "income"
       <div className="mx-auto w-full max-w-[1440px] space-y-6">
         {/* Header */}
         <header className="kaizen-page-header flex items-center gap-3 border-b border-border/60 pb-5">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-foreground"><Wallet className="h-5 w-5" /></div>
+          <div className="kaizen-header-icon"><Wallet className="h-5 w-5" /></div>
           <div><h1 className="text-2xl font-extrabold tracking-tight">Finance</h1><p className="text-sm text-muted-foreground">Manage income, expenses and your monthly budget</p></div>
         </header>
 
