@@ -501,7 +501,7 @@ export function NotesTracker() {
     <div className="flex min-h-dvh justify-center bg-background/50 px-3 py-3 font-sans text-foreground antialiased sm:px-6 sm:py-5 md:px-10 md:py-7">
       <div className="flex w-full max-w-[1440px] animate-in flex-col gap-4 duration-500 fade-in slide-in-from-bottom-4 sm:gap-5">
         {/* Header */}
-        <header className="flex shrink-0 items-center justify-between gap-3">
+        <header className="kaizen-page-header flex shrink-0 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
             <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
               <PenTool className="h-5 w-5" />
