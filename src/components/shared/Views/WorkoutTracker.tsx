@@ -748,7 +748,7 @@ export function WorkoutTracker({ onBack }: WorkoutTrackerProps) {
     <div className="animate-fade-in flex min-h-screen justify-center bg-background p-4 font-sans text-foreground sm:p-6 md:p-8">
       <div className="w-full max-w-5xl space-y-8">
         {/* Header Control Unit */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <header className="kaizen-page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
