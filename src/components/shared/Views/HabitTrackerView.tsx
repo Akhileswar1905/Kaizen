@@ -48,7 +48,7 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
   return (
       <main className="habit-tracker-page w-full space-y-6 text-foreground antialiased">
         <div className="habit-tracker-content mx-auto w-full max-w-[1440px] space-y-7">
-            <header className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
+            <header className="kaizen-page-header flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-bold tracking-[0.16em] text-muted-foreground">HABIT TRACKER</p>
                 <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Build your rhythm.</h1>
