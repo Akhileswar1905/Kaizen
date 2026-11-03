@@ -49,10 +49,10 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
       <main className="habit-tracker-page w-full space-y-6 text-foreground antialiased">
         <div className="habit-tracker-content mx-auto w-full max-w-[1440px] space-y-7">
             <header className="kaizen-page-header flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs font-bold tracking-[0.16em] text-muted-foreground">HABIT TRACKER</p>
-                <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Build your rhythm.</h1>
-                <p className="mt-1 text-sm text-muted-foreground">A little progress, repeated every day.</p>
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="kaizen-header-icon"><Activity className="h-5 w-5" /></div>
+                <div><h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Habits</h1>
+                <p className="kaizen-header-tagline">Build your rhythm, one small action at a time.</p></div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="mr-1 text-sm font-semibold text-muted-foreground">{format(new Date(), "EEEE, d MMMM")}</span>
