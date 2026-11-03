@@ -108,7 +108,7 @@ export function SystemDesignHub({ onBack }: SystemDesignHubProps) {
       <div className="animate-fade-in flex min-h-screen justify-center bg-background p-4 font-sans text-foreground sm:p-6 md:p-8">
         <div className="w-full max-w-5xl space-y-8">
           {/* Header */}
-          <header className="flex items-center justify-between">
+          <header className="kaizen-page-header flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
                 variant="outline"
