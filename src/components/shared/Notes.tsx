@@ -503,7 +503,7 @@ export function NotesTracker() {
         {/* Header */}
         <header className="kaizen-page-header flex shrink-0 items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-            <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
+            <div className="kaizen-header-icon hidden sm:inline-flex">
               <PenTool className="h-5 w-5" />
             </div>
             <div className="min-w-0">
