@@ -41,7 +41,7 @@ export function JournalView({ onBack }: { onBack: () => void }) {
   return (
     <div className="mx-auto flex h-[calc(100vh-2rem)] max-w-6xl animate-in flex-col gap-6 p-4 duration-500 fade-in slide-in-from-bottom-4 md:p-8">
       {/* RESPONSIVE HEADER */}
-      <header className="flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
+      <header className="kaizen-page-header flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
         {/* Left Side: Navigation Context */}
         <div className="flex items-start gap-4 sm:items-center">
           <Button
