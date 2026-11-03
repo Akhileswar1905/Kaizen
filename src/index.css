@@ -961,16 +961,10 @@ h1,h2,h3,h4,h5,h6 { font-weight:700; letter-spacing:-0.015em; }
 
 
 
-/* Consistent workspace headers across every tool page (dashboard stays distinct). */
+/* Shared header visual language: icon tile, title and supporting tagline.
+   Layout remains owned by each page so actions stay in their natural position. */
 .kaizen-page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  min-height: 5.25rem;
-  margin-bottom: 1.5rem;
-  padding: 0 0 1.25rem;
-  border-bottom: 1px solid color-mix(in oklch, var(--border) 82%, transparent);
+  border-color: color-mix(in oklch, var(--border) 82%, transparent);
 }
 .kaizen-page-header h1 {
   color: var(--foreground);
@@ -979,17 +973,30 @@ h1,h2,h3,h4,h5,h6 { font-weight:700; letter-spacing:-0.015em; }
   line-height: 1.2;
   letter-spacing: -0.035em;
 }
-.kaizen-page-header p { color: var(--muted-foreground); }
-.kaizen-page-header > :first-child { min-width: 0; }
+.kaizen-page-header p {
+  color: var(--muted-foreground);
+}
+.kaizen-header-icon {
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in oklch, var(--primary) 12%, var(--border));
+  border-radius: .9rem;
+  background: color-mix(in oklch, var(--primary) 9%, var(--card));
+  color: var(--primary);
+}
+.kaizen-header-icon svg { width: 1.25rem; height: 1.25rem; }
+.kaizen-page-header .kaizen-header-tagline {
+  margin-top: .3rem;
+  font-size: .875rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
 @media (max-width: 640px) {
-  .kaizen-page-header {
-    align-items: flex-start;
-    flex-wrap: wrap;
-    min-height: 0;
-    gap: .75rem;
-    margin-bottom: 1.25rem;
-    padding-bottom: 1rem;
-  }
   .kaizen-page-header h1 { font-size: 1.375rem; }
-  .kaizen-page-header > :last-child { max-width: 100%; }
+  .kaizen-page-header .kaizen-header-tagline { font-size: .8125rem; }
 }
