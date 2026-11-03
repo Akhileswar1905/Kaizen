@@ -74,7 +74,7 @@ export function DsaSheet() {
   return (
     <div className="dsa-workspace mx-auto max-w-5xl animate-in space-y-7 p-4 duration-500 fade-in slide-in-from-bottom-4 md:p-7">
       {/* Dynamic Header Workspace */}
-      <div className="dsa-header flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="kaizen-page-header dsa-header flex flex-col gap-4 border-b border-border/40 pb-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">
