@@ -18,6 +18,7 @@ import {
   Plus,
   Edit3,
   FileText,
+  Download,
   X,
 } from "lucide-react"
 import {
@@ -439,6 +440,47 @@ export function NotesTracker() {
     await subtractGamificationPoints({ type: "NOTE_SAVED", amount: 1 })
   }
 
+  const downloadNote = (note: Note) => {
+    const escapeHtml = (value: string) =>
+      value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
+    const createdAt = format(new Date(note.created_at), "MMMM d, yyyy 'at' h:mm a")
+    const metadata = [note.tag, folderName(note.folder_id)].filter(Boolean).join(" · ")
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(note.title || "Untitled note")}</title>
+<style>
+  body { max-width: 820px; margin: 48px auto; padding: 0 24px; color: #202124; font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  h1 { margin-bottom: 8px; font-size: 2rem; line-height: 1.2; }
+  .meta { margin: 0 0 32px; color: #6b7280; font-size: 13px; }
+  img { max-width: 100%; height: auto; border-radius: 8px; }
+  pre { overflow-x: auto; padding: 16px; border-radius: 8px; background: #f3f4f6; }
+  code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+  blockquote { margin-left: 0; padding-left: 16px; border-left: 3px solid #d1d5db; color: #6b7280; }
+  table { width: 100%; border-collapse: collapse; } th, td { padding: 8px; border: 1px solid #d1d5db; text-align: left; }
+  @media print { body { margin: 0 auto; } }
+</style>
+</head>
+<body>
+<h1>${escapeHtml(note.title || "Untitled note")}</h1>
+<p class="meta">${escapeHtml([metadata, createdAt].filter(Boolean).join(" · "))}</p>
+<main>${note.content}</main>
+</body>
+</html>`
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    const filename = (note.title || "study-note").trim().replace(/[^a-z0-9-_]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "study-note"
+    link.href = url
+    link.download = `${filename}.html`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
   const clearFilters = () => {
     setSearchQuery("")
     setActiveFilterTag("All")
@@ -792,6 +834,17 @@ export function NotesTracker() {
                     <div className="flex items-center gap-1 sm:gap-1.5">
                       {selectedNote && !isEditing && (
                         <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => downloadNote(selectedNote)}
+                            className="gap-1.5 text-xs font-semibold"
+                            title="Download note as an HTML file"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Download</span>
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
