@@ -62,7 +62,7 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
               </div>
             </header>
 
-            <section className="space-y-6">
+            <section className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(290px,340px)]">
               <div className="min-w-0 space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -148,7 +148,7 @@ export function HabitTrackerView(props: HabitTrackerViewProps) {
                 </div>
               </div>
 
-              <aside className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <aside className="grid grid-cols-1 gap-4">
                 <div className="rounded-2xl border border-border/70 bg-card p-5">
                   <p className="text-xs font-bold tracking-wide text-muted-foreground">WEEKLY COMPLETION</p>
                   <div className="mt-4 flex items-end gap-2">
